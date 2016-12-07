@@ -4,17 +4,17 @@ from cvxpy import *
 import math
 import Constants
 import Solver
-import numpy
+import numpy as np
 
 class Traffic_Agent(object):
 	#lb and ub should be a 2D list
 	def __init__(self, neigh, iNumVars):
-		#self.upstream = 
-		#self.downstream = 
+		self.upstream =  []
+		self.downstream = []
 
 		self.neigh = neigh	
 		self.iNumVars = iNumVars
-		self.Vars = []
+		self.Vars = Solver.Variable_Initialization(self, iNumVars)
 		#Traffic_Agent.sample_constructor = Solver.Variable_Initialization
 
 	def get_new_data(self):

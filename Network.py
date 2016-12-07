@@ -1,4 +1,6 @@
 import numpy as np
+from mpi4py import MPI
+from cvxpy import *
  
 
 class TrafficNetwork(object):
@@ -29,6 +31,34 @@ class TrafficAgentModel(object):
 
 	def get_local_queue(self, queue_id):
 		return self._local_queue[queue_id]
+
+		
+	def get_new_data(self):
+		comm = MPI.COMM_WORLD
+		lb = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_LOWER_BOUNDS)	
+		ub = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_UPPER_BOUNDS)
+		dual = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_DUAL_VARS)
+		self.set_new_data(lb, ub, dual)
+
+	def set_new_data(self, lb , ub , dual):	
+		self.lb = lb
+		self.ub = ub
+		self.dual = dual
+
+	def construct_prob(self):
+		comm = MPI.COMM_WORLD
+		comm.send(lb , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_LB)	
+		comm.send(ub , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_UB)
+		comm.send(dual , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_DUAL)
+
+	def admm_optimize(self):
+		#HCH - Fill
+		return	
+		
+	def solve_problems(self):
+		while(1):	
+			self.get_new_data()	
+			self.admm_optimize()	
 
 	def set_neighbors(self, neighbor, edge):
 		if neighbor not in self._neighbor_agents:
