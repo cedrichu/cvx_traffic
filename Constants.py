@@ -8,5 +8,6 @@ TREE_START_LB = 301
 TREE_START_UB = 302
 TREE_START_DUAL = 303
 OBJ_PERT_FACTOR = 0.0001 
+QUEUE_LENGTH = 20
 
 BB_TREE_ID  = 0  # do not change this value to other than 0
