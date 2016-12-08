@@ -184,16 +184,19 @@ class TrfficQueue(object):
 
 
 def main():
+	'''create agents'''
 	queue_num = 4
 	t1 = TrafficAgentModel(0,queue_num)
 	t2 = TrafficAgentModel(1,queue_num)
 	t3 = TrafficAgentModel(2,queue_num)
 	t4 = TrafficAgentModel(3,queue_num)
 	agent_list = [t1,t2,t3,t4]
+	'''specify external arrival rates'''
 	t1.set_ext_arr_rate([10,0,0,10])
 	t2.set_ext_arr_rate([10,10,0,0])
 	t3.set_ext_arr_rate([0,10,10,0])
 	t4.set_ext_arr_rate([0,0,10,10])
+	'''specify connection'''
 	n = len(agent_list)
 	adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
 	adjacent_matrix[0][1] = [[0,3,2],3]
@@ -204,10 +207,10 @@ def main():
 	adjacent_matrix[1][0] = [[0,1,2],1]
 	adjacent_matrix[2][1] = [[1,2,3],2]
 	adjacent_matrix[2][3] = [[0,1,2],1]
-	
+	'''construct network'''
 	network = TrafficNetwork(agent_list, adjacent_matrix)
 
-
+	'''for testing'''
 	print adjacent_matrix
 	print network
 	for t in agent_list:
