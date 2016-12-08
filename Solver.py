@@ -48,25 +48,25 @@ def Variable_Initialization(self):
 	Vars[13].append(Variable(1)) # 13 - r_i
 
 	Vars.append([])
-	for i in range(0 , len(self.upstream)):
-		Vars[14].append(Variable(1))				#14 - Az_i^j 
+	for i in range(0 , len(self._downstream_queue)):
+		Vars[14].append(0)							#14 - Az_i^j 
 
 	Vars.append([])	
-	Vars[15].append(Variable(1))					#15 - Bz_i
+	Vars[15].append(0)								#15 - Bz_i
 
 	Vars.append([])	
-	Vars[16].append(Variable(1))					#16 - Cz_i
+	Vars[16].append(0)								#16 - Cz_i
 
 	Vars.append([])
-	for i in range(0 , len(self.downstream)):
-		Vars[17].append(Variable(1))					#17 - Dz_i^j
+	for i in range(0 , len(self._upstream_queue)):
+		Vars[17].append(0)							#17 - Dz_i^j
 
 	Vars.append([])			
-	Vars[18].append(Variable(1))					#18 - EZ_i
+	Vars[18].append(0)								#18 - EZ_i
 	
 	Vars.append([])
-	for i in range(0 , len(self.upstream)):
-		Vars[19].append(Variable(1))				#19 - Fz_i^j 
+	for i in range(0 , len(self._upstream_queue)):
+		Vars[19].append(0)							#19 - Fz_i^j 
 	  
 	return Vars
 
