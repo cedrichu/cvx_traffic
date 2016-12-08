@@ -4,7 +4,7 @@ from cvxpy import *
  
 
 class TrafficNetwork(object):
-	def __init__(self, agent_list):
+	def __init__(self, agent_list, adjacent_matrix):
 		self._vertex = agent_list
 		self._vertex_num = len(agent_list)
 		self._adjacent_matrix = adjacent_matrix
@@ -32,7 +32,16 @@ class TrafficAgentModel(object):
 	def get_local_queue(self, queue_id):
 		return self._local_queue[queue_id]
 
+
+	def set_neighbors(self, neighbor, edge):
 		
+		if neighbor not in self._neighbor_agents:
+			self._neighbor_agents.append(neighbor)
+
+		for i in edge[0]:
+			self._local_queue[edge[1]].set_upstream(neighbor.get_local_queue(edge[0][i]))
+			neighbor.get_local_queue(i).set_downstream(self._local_queue[edge[1]])
+	
 	def get_new_data(self):
 		comm = MPI.COMM_WORLD
 		lb = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_LOWER_BOUNDS)	
@@ -60,16 +69,7 @@ class TrafficAgentModel(object):
 			self.get_new_data()	
 			self.admm_optimize()	
 
-	def set_neighbors(self, neighbor, edge):
-		if neighbor not in self._neighbor_agents:
-			self._neighbor_agents.append(neighbor)
-
-		for i in edge[0]:
-			self._local_queue[edge[1]].set_upstream(neighbor.get_local_queue(edge[0][i]))
-			neighbor.get_local_queue(i).set_downstream(self._local_queue[edge[1]])
-
-		
-
+	
 class TrfficQueue(object):
 	def __init__(self, agent_id, queue_id):
 		self._agent_id = agent_id
@@ -90,10 +90,17 @@ class TrfficQueue(object):
 		self._w = 0
 		self._g = 0
 		self._omega = 0
+		self._bz = 0
+		self._cz = 0
+		self._ez = 0
 		
 		'''neighbors'''
 		self._upstream_queue = []
 		self._downstream_queue = []
+		self._az = []
+		self._dz = []
+		self._fz = []
+
 
 		'''constant'''
 		self._up_turning_prop = []
@@ -111,6 +118,14 @@ class TrfficQueue(object):
 
 
 def main():
+	queue_num = 4
+	t1 = TrafficAgentModel(1,queue_num)
+	t2 = TrafficAgentModel(2,queue_num)
+	t3 = TrafficAgentModel(3,queue_num)
+	t4 = TrafficAgentModel(4,queue_num)
+	agent_list = [t1,t2,t3,t4]
+	adjacent_matrix = (((),(),(),())
+	TrafficNetwork(agent_list, adjacent_matrix)
 
 
 
