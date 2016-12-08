@@ -75,6 +75,11 @@ class TrfficQueue(object):
 		self._agent_id = agent_id
 		self._queue_id = queue_id
 
+		self._vars = Solver.Variable_Initialization()
+		self._constraints = []
+		self.lb = []
+		self.ub = []
+				
 		'''local variables'''
 		self._arr_rate = 0
 		self._eff_arr_rate = 0
@@ -108,7 +113,12 @@ class TrfficQueue(object):
 	def set_downstream(self, queue):
 		self._downstream_queue.append(queue)
 
+	def create_constraints(self):
+		return Solver.Create_constraints_for_queue(self._vars , self._upstream_queue, self._downstream_queue, self.lb, self.ub)
 
+	def get_constraints(self):
+		_constraints = self.create_constraints()
+		return _constraints	
 
 def main():
 
