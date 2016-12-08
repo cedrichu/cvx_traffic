@@ -37,6 +37,9 @@ class TrafficAgentModel(object):
 
 		self.init_local_queue()
 
+		'''constants'''
+		self._sat_flow_rate = 0
+
 	def init_local_queue(self):
 		for i in range(self._local_queue_num):
 			queue = TrfficQueue(self._agent_id, i)
@@ -132,7 +135,7 @@ class TrfficQueue(object):
 		'''constants'''
 		self._turn_prop = {}
 		self._ext_arr_rate = 0
-		self._sat_flow_rate = 0
+
 
 	def set_upstream(self, queue):
 		self._upstream_queue.append(queue)
