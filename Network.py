@@ -69,7 +69,8 @@ class TrafficAgentModel(object):
 	def __repr__(self):
 		return str([self._agent_id, [v.get_agent_id() for v in self._neighbor_agents]])
 
-
+	def get_queue_sum_sat_contraint(self):
+		eqns = []	
 	
 	
 	# def get_new_data(self):
@@ -105,8 +106,8 @@ class TrfficQueue(object):
 		self._agent_id = agent_id
 		self._queue_id = queue_id
 
-		#self._vars = Solver.Variable_Initialization()
-		#self._constraints = []
+		self._vars = Solver.Variable_Initialization()
+		self._constraints = []
 		self.lb = []
 		self.ub = []
 				
@@ -173,12 +174,12 @@ class TrfficQueue(object):
 		
 
 
-	# def create_constraints(self):
-	# 	return Solver.Create_constraints_for_queue(self._vars , self._upstream_queue, self._downstream_queue, self.lb, self.ub)
+	def create_constraints(self):
+	 	return Solver.Create_constraints_for_queue(self._vars , self._upstream_queue, self._downstream_queue, self.lb, self.ub)
 
-	# def get_constraints(self):
-	# 	_constraints = self.create_constraints()
-	# 	return _constraints	
+	def get_constraints(self):
+		_constraints = self.create_constraints()
+	 	return _constraints	
 
 
 
