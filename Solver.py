@@ -1,9 +1,11 @@
 from cvxpy import *
 import numpy as np
 import Constants
+from mpi4py import MPI
 
-def Variable_Initialization(self):
+def Variable_Initialization(Up_queue, Down_queue):
 	Vars = []
+	Dual = dict()
 
 	Vars.append([])
 	Vars[0].append(Variable(1)) # 0 - \lambda_i
@@ -47,31 +49,51 @@ def Variable_Initialization(self):
 	Vars.append([])
 	Vars[13].append(Variable(1)) # 13 - r_i
 
-	Vars.append([])
-	for i in range(0 , len(self._downstream_queue)):
-		Vars[14].append(0)							#14 - Az_i^j 
+	Vars.append(dict())
+	Dual['A'] = dict()
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		Vars[14][(agent_id, queue_id)] = 0			#14 - Az_i^j 
+		Dual['A'][(agent_id, queue_id)] = 0 
 
 	Vars.append([])	
 	Vars[15].append(0)								#15 - Bz_i
+	Dual['B'] = 0 
 
 	Vars.append([])	
 	Vars[16].append(0)								#16 - Cz_i
+	Dual['C'] = 0
 
-	Vars.append([])
-	for i in range(0 , len(self._upstream_queue)):
-		Vars[17].append(0)							#17 - Dz_i^j
+	Vars.append(dict())
+	Dual['D'] = dict()
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		Vars[17][(agent_id, queue_id)] = 0			#17 - Dz_i^j
+		Dual['D'][(agent_id, queue_id)] = 0
 
 	Vars.append([])			
 	Vars[18].append(0)								#18 - EZ_i
+	Dual['E'] = 0
 	
-	Vars.append([])
-	for i in range(0 , len(self._upstream_queue)):
-		Vars[19].append(0)							#19 - Fz_i^j 
+	Vars.append(dict())
+	Dual['F'] = dict()
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		Vars[19][(agent_id, queue_id)] = 0			#19 - Fz_i^j 
+		Dual['F'][(agent_id, queue_id)] = 0
 	  
-	return Vars
+	Vars.append([])
+	Vars[20].append(0)
 
+	Vars.append([])
+	Vars[21].append(0)
 
-def Create_constraints_for_queue(Vars, Up_queue, down_queue , lb, ub):
+	return Vars , Dual
+
+def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub):
 	constraints = []
 	
 	eqn1 = Create_eqn_1(Vars, lb, ub)
@@ -79,6 +101,9 @@ def Create_constraints_for_queue(Vars, Up_queue, down_queue , lb, ub):
 
 	eqn3 = Create_eqn_3(Vars, lb, ub)
 	constraints.append(eqn3)
+
+	eqn4 = Create_eqn_4_partial(Vars, lb, ub)
+	constraints.append(eqn4)
 
 	eqn6 = Create_eqn_6(Vars, lb, ub)
 	constraints.append(eqn6)
@@ -99,6 +124,12 @@ def Create_eqn_3(Vars , lb, ub):
 
 	return eqns
 
+def Create_eqn_4_partial(Vars , lb, ub):
+	eqns = []
+
+	eqns.append( Construct_McCormick( Vars[13][0] , Vars[5][0] , Vars[1][0] , lb[13][0] , ub[13][0] , lb[5][0] , ub[5][0] ) )  #eqn 12
+	eqns.append( Construct_McCormick( Vars[12][0] , Vars[3][0] , Vars[1][0] , lb[12][0] , ub[12][0] , lb[3][0] , ub[3][0] ) )  #eqn 13
+	return eqns
 
 def Create_eqn_6(Vars , lb , ub ):
 	eqns = []
@@ -117,7 +148,6 @@ def Create_eqn_6(Vars , lb , ub ):
 	return eqns
 
 def Create_eqn_7(Vars, lb, ub):
-
 	return Construct_McCormick(Vars[7][0] , Vars[3][0] , Vars[0][0] , lb[7][0] , ub[7][0] , lb[3][0] , ub[3][0] )
 
 
@@ -139,4 +169,130 @@ def Construct_Fractional_Envelope(var1 , var2 , lb1 , ub1 , lb2 , ub2 ):
 	eqns.append( (lb2 * ub1 * ub1 ) + (ub1 - var1) <= (var2 * ub1 * ub1) )
 
 	return eqns
+
+def Get_queue_objective(Vars, Duals, Up_queue, Down_queue , ext_arr_rate , turn_prop):
+	obj = inv_pos(1 - Vars[7][0]) - 1
+	obj = obj + Get_dual_objective_eqn_2(Vars, Duals, Down_queue , ext_arr_rate , turn_prop)
+	obj = obj + Get_dual_objective_eqn_4(Vars, Duals, Up_queue)
+	obj = obj + Get_dual_objective_eqn_5(Vars, Duals, turn_prop)
+	return obj
+
+def Get_dual_objective_eqn_2(Vars, Duals , Down_queue , ext_arr_rate , turn_prop):	
+	obj = Get_dual_objective_eqnA(Vars , Duals , Down_queue , turn_prop)
+	obj = obj + Get_dual_objective_eqnB(Vars , Duals , ext_arr_rate)
+	return obj	
+
+def Get_dual_objective_eqn_4(Vars , Duals , Up_queue):
+	obj  = 	Get_dual_objective_eqn_C(Vars , Duals)
+	obj = obj + Get_dual_objective_eqn_D(Vars, Duals , Up_queue)
+	return obj	
+
+def Get_dual_objective_eqn_5(Vars, Duals, turn_prop):
+	obj = Get_dual_objective_eqn_E(Vars, Duals)
+	obj = obj + Get_dual_objective_eqn_F(Vars, Duals, turn_prop)
+	return obj		
+
+def Get_dual_objective_eqn_A(Vars , Duals , Down_queue , turn_prop):	
+	obj = norm(0)
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		var = turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
+		obj = obj + Dual['A'][(agent_id, queue_id)] * var 
+		obj = obj + (Constants.ADMM_PEN * square( var )/2.0
+	return obj	
+
+def Get_dual_objective_eqn_B(Vars , Duals , arr_rate):	
+	var = Vars[1][0] - (arr_rate * Vars[8][0]) - Vars[15][0]	
+	obj = ( Dual['B'] * var ) + Constants.ADMM_PEN * square(var)/2.0 
+	return obj
+
+def Get_dual_objective_eqn_C(Vars, Duals):
+	var = Vars[13][0] - Vars[16][0]
+	obj = ( Duals['C'] * var ) + Constants.ADMM_PEN * square(var)/2.0
+	return obj	
+
+def Get_dual_objective_eqn_D(Vars, Duals , Up_queue):
+	obj = norm(0)
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		var = Vars[12][0] - Vars[17][(agent_id , queue_id)]
+		obj = obj + Dual['D'][(agent_id, queue_id)] * var
+		obj = obj + Constants.ADMM_PEN * square(var)/2.0 
+	return obj		
+
+def Get_dual_objective_eqn_E(Vars, Duals):	
+	var = Vars[6][0] - Vars[18][0]
+	obj = (Duals['E'] * var) + Constants.ADMM_PEN * square(var)/2.0 
+	return obj
+
+def Get_dual_objective_eqn_F(Vars, Duals, turn_prop):
+	obj = norm(0)
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		var = Vars[19][(agent_id , queue_id)] - (turn_prop((agent_id , queue_id)) * Vars[2][0])	
+		obj = obj + Dual['F'][(agent_id , queue_id)] * var
+		obj = obj + Constants.ADMM_PEN * square(var)/2.0 
+	return obj
+
+def Update_Dual_Vars(Vars , Duals, Up_queue, Down_queue , ext_arr_rate , turn_prop):
+	Update_Dual_Vars_eqn_2(Vars , Duals, Down_queue , ext_arr_rate , turn_prop)	
+	Update_Dual_Vars_eqn_4(Vars, Duals, Up_queue)
+	Update_Dual_Vars_eqn_5(Vars, Duals, turn_prop)
+
+def Update_Dual_Vars_eqn_2(Vars , Duals, Down_queue , ext_arr_rate , turn_prop):
+	Update_Dual_Vars_eqn_A(Vars , Duals , Down_queue , turn_prop)	
+	Update_Dual_Vars_eqn_B(Vars , Duals , ext_arr_rate)
+
+def Update_Dual_Vars_eqn_4(Vars, Duals, Up_queue):	
+	Update_Dual_Vars_eqn_C(Vars , Duals)
+	Update_Dual_Vars_eqn_D(Vars, Duals , Up_queue)
+
+def Update_Dual_Vars_eqn_5(Vars, Duals, turn_prop):
+	Update_Dual_Vars_eqn_E(Vars, Duals)
+	Update_Dual_Vars_eqn_F(Vars, Duals, turn_prop)
+
+def Update_Dual_Vars_eqn_A(Vars , Duals , Down_queue , turn_prop):
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		var = turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
+		Dual['A'][(agent_id, queue_id)]  = Dual['A'][(agent_id, queue_id)] + ( Constants.ADMM_PEN * var )
+		
+def Update_Dual_Vars_eqn_B(Vars , Duals , arr_rate):	
+	var = Vars[1][0] - (arr_rate * Vars[8][0]) - Vars[15][0]	
+	Dual['B'] = Dual['B'] + ( Constants.ADMM_PEN * var ) 
+		
+def Update_Dual_Vars_eqn_C(Vars, Duals):
+	var = Vars[13][0] - Vars[16][0]
+	Duals['C'] = Duals['C'] + ( Constants.ADMM_PEN * var ) 
+
+def Update_Dual_Vars_eqn_D(Vars, Duals , Up_queue):
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		var = Vars[12][0] - Vars[17][(agent_id , queue_id)]
+		Dual['D'][(agent_id, queue_id)] = Dual['D'][(agent_id, queue_id)] + ( Constants.ADMM_PEN * var )
+
+def Update_Dual_Vars_eqn_E(Vars, Duals):	
+	var = Vars[6][0] - Vars[18][0]
+	Duals['E'] = Duals['E'] + (Constants.ADMM_PEN * var) 
+
+def Update_Dual_Vars_eqn_F(Vars, Duals, turn_prop):
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		var = Vars[19][(agent_id , queue_id)] - (turn_prop((agent_id , queue_id)) * Vars[2][0])	
+		Dual['F'][(agent_id , queue_id)] = Dual['F'][(agent_id , queue_id)] + ( Constants.ADMM_PEN * var )	
+	
+def send_rel_vars(Vars , Duals, Up_queue , Down_queue , turn_prop):
+	comm = MPI.COMM_WORLD
+	rank = comm.Get_rank()
+
+def send_rel_vars_eqn_A( Vars , Duals ,  )
+
+
+
 

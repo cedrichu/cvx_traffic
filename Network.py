@@ -64,9 +64,34 @@ class TrafficAgentModel(object):
 	def __repr__(self):
 		return str([self._agent_id, [v._agent_id for v in self._neighbor_agents]])
 
-	def get_queue_sum_sat_contraint(self):
-		eqns = []	
-	
+	def get_queue_sum_sat_constraint(self):
+		eqn = Variable()
+		constraint = []
+
+		for i in range(self._local_queue_num)
+			eqn = eqn + self.get_local_queue(i)._vars[4][0]
+		
+		constraint.append(eqn == self._sat_flow_rate)
+		return constraint
+
+	def get_all_constraints(self):
+		constraints = []
+
+		for i in range(self._local_queue_num)
+			constraints.append(self.get_local_queue(i).get_constraints())	
+
+		constraints.append(self.get_queue_sum_sat_constraint())	
+		return constraints	
+
+	def get_new_objective(self):
+		
+		obj = Minimize(pos(0))	
+
+		for i in range(self._local_queue_num)
+			obj = obj + self.get_local_queue(i).get_objective()
+
+		return obj	
+
 	
 	# def get_new_data(self):
 	# 	comm = MPI.COMM_WORLD
@@ -90,10 +115,34 @@ class TrafficAgentModel(object):
 	# 	#HCH - Fill
 	# 	return	
 		
-	# def solve_problems(self):
-	# 	while(1):	
-	# 		self.get_new_data()	
-	# 		self.admm_optimize()	
+
+	def Update_consensus_vars(self):
+		for i in range(self._local_queue_num):
+			self.get_local_queue(i).send_rel_vars()
+
+		for i in range(self._local_queue_num):
+			self.get_local_queue(i).receive_rel_vars()
+
+		for i in range(self._local_queue_num):	
+			self.get_local_queue(i).send_solved_vars()
+
+		for i in range(self._local_queue_num):	
+			self.get_local_queue(i).recv_solved_vars()			
+
+	
+	def Update_Dual_Vars(self):
+		for i in range(self._local_queue_num):
+			self.get_local_queue(i).Update_Dual_Vars()
+
+	def solve_problems(self):	 	
+	 	constraints =  self.get_all_constraints()	 	
+	 	while(1):	
+	 		obj = self.get_new_objective()
+	 		prob = Problem(Minimize(obj), constraints)
+			prob.solve()
+
+			self.Update_consensus_vars()
+			self.Update_Dual_Vars()	 		
 
 	
 class TrfficQueue(object):
@@ -101,11 +150,11 @@ class TrfficQueue(object):
 		self._agent_id = agent_id
 		self._queue_id = queue_id
 
-		self._vars = Solver.Variable_Initialization()
+		self._vars , self.dual_vars = Solver.Variable_Initialization()
 		self._constraints = []
 		self.lb = []
 		self.ub = []
-				
+						
 		'''local variables'''
 		self._arr_rate = 0
 		self._eff_arr_rate = 0
@@ -152,8 +201,7 @@ class TrfficQueue(object):
 		self._ext_arr_rate = rate
 
 	def get_turning_prop(self, agent_id, queue_id):
-		return self._turn_prop[(agent_id, queue_id)]
-		
+		return self._turn_prop[(agent_id, queue_id)]		
 
 
 	def create_constraints(self):
@@ -163,7 +211,20 @@ class TrfficQueue(object):
 		_constraints = self.create_constraints()
 	 	return _constraints	
 
+	def get_objective(self):
+		return Solver.Get_queue_objective(self.vars, self.dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop) 	
 
+	def Update_Dual_Vars(self):
+		return Solver.Update_Dual_Vars(self.vars, self.dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop)
+
+	def send_rel_vars():
+		return Solver.send_rel_vars()
+
+	def receive_rel_vars():
+
+	def send_solved_vars():
+
+	def recv_solved_vars():
 
 def main():
 	queue_num = 4
