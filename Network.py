@@ -88,8 +88,7 @@ class TrafficAgentModel(object):
 		constraints.append(self.get_queue_sum_sat_constraint())	
 		return constraints	
 
-	def get_new_objective(self):
-		
+	def get_new_objective(self):		
 		obj = Minimize(pos(0))	
 
 		for i in range(self._local_queue_num)
@@ -116,22 +115,20 @@ class TrafficAgentModel(object):
 		comm.send(ub , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_UB)
 		comm.send(dual , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_DUAL)
 
-	def admm_optimize(self):
-		#HCH - Fill
-		return	
-		
 	def Update_consensus_vars(self):
 		for i in range(self._local_queue_num):
 			self.get_local_queue(i).send_rel_vars()
 
+		neigh_data = dict()
+
 		for i in range(self._local_queue_num):
-			self.get_local_queue(i).receive_rel_vars()
+			neigh_data[i] = self.get_local_queue(i).receive_rel_vars()
 
 		for i in range(self._local_queue_num):	
-			self.get_local_queue(i).send_solved_vars()
+			self.get_local_queue(i).solve_send_vars(neigh_data[i])
 
 		for i in range(self._local_queue_num):	
-			self.get_local_queue(i).recv_solved_vars()			
+			self.get_local_queue(i).recv_update_solved_vars()			
 
 	
 	def Update_Dual_Vars(self):
@@ -153,7 +150,7 @@ class TrfficQueue(object):
 		self._agent_id = agent_id
 		self._queue_id = queue_id
 
-		self._vars , self.dual_vars = Solver.Variable_Initialization()
+		self._vars , self._dual_vars = Solver.Variable_Initialization()
 		self._constraints = []
 		self.lb = []
 		self.ub = []
@@ -227,19 +224,22 @@ class TrfficQueue(object):
 	 	return _constraints	
 
 	def get_objective(self):
-		return Solver.Get_total_queue_objective(self.vars, self.dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop) 	
+		return Solver.Get_total_queue_objective(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop) 	
 
 	def Update_Dual_Vars(self):
-		return Solver.Update_Dual_Vars(self.vars, self.dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop)
+		return Solver.Update_Dual_Vars(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop)
 
 	def send_rel_vars():
-		return Solver.send_rel_vars()
-
+		return Solver.send_rel_vars(self._vars , self._dual_vars , self._upstream_queue, self._downstream_queue, self._turn_prop , self._queue_id )
+		
 	def receive_rel_vars():
+		return Solver.receive_rel_vars(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id )
 
-	def send_solved_vars():
+	def solve_send_vars(neigh_data):
+		return Solver.solve_coupling_eqns_send_sols(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id , neigh_data , self._ext_arr_rate)
 
-	def recv_solved_vars():
+	def recv_update_solved_vars():
+		return Solver.recv_update_solved_vars(self._vars , self._agent_id , self._queue_id , self._upstream_queue , self._downstream_queue)
 
 def main():
 	'''create agents'''

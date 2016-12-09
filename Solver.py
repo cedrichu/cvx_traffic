@@ -84,7 +84,11 @@ def Variable_Initialization(Up_queue, Down_queue):
 		queue_id = Up_queue[i]._queue_id
 		Vars[19][(agent_id, queue_id)] = 0			#19 - Fz_i^j 
 		Dual['F'][(agent_id, queue_id)] = 0
-	  
+	 
+	Dual['1'] = 0
+	Dual['4'] = 0
+	Dual['5'] = 0	
+
 	return Vars , Dual
 
 def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub):
@@ -191,9 +195,9 @@ def Get_dual_objective_eqn_A(Vars , Duals , Down_queue , turn_prop):
 	for i in range(len(Down_queue)):
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
-		var = turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
+		var = (turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
 		obj = obj + Dual['A'][(agent_id, queue_id)] * var 
-		obj = obj + (Constants.ADMM_PEN * square( var )/2.0
+		obj = obj + Constants.ADMM_PEN * square( var )/2.0
 	return obj	
 
 def Get_dual_objective_eqn_B(Vars , Duals , arr_rate):	
@@ -252,7 +256,7 @@ def Update_Dual_Vars_eqn_A(Vars , Duals , Down_queue , turn_prop):
 	for i in range(len(Down_queue)):
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
-		var = turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
+		var = (turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
 		Dual['A'][(agent_id, queue_id)]  = Dual['A'][(agent_id, queue_id)] + ( Constants.ADMM_PEN * var )
 		
 def Update_Dual_Vars_eqn_B(Vars , Duals , arr_rate):	
@@ -278,15 +282,206 @@ def Update_Dual_Vars_eqn_F(Vars, Duals, turn_prop):
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
-		var = Vars[19][(agent_id , queue_id)] - (turn_prop((agent_id , queue_id)) * Vars[2][0])	
+		var = Vars[19][(agent_id , queue_id)] - (turn_prop[(agent_id , queue_id)] * Vars[2][0])	
 		Dual['F'][(agent_id , queue_id)] = Dual['F'][(agent_id , queue_id)] + ( Constants.ADMM_PEN * var )	
 	
-def send_rel_vars(Vars , Duals, Up_queue , Down_queue , turn_prop):
+def send_rel_vars(Vars , Duals, Up_queue , Down_queue , turn_prop , My_queue_id):
+	send_rel_vars_eqn_A( Vars , Duals , Down_queue , turn_prop , My_queue_id )
+	send_rel_vars_eqn_D(Vars , Duals , Up_queue , My_queue_id )
+	send_rel_vars_eqn_E(Vars , Duals , Up_queue , turn_prop , My_queue_id )
+
+def send_rel_vars_eqn_A( Vars , Duals , Down_queue , turn_prop , My_queue_id ):
 	comm = MPI.COMM_WORLD
 	rank = comm.Get_rank()
 
-def send_rel_vars_eqn_A( Vars , Duals ,  )
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		TAG = str(rank)+'_'+str(queue_id)+'_' +str(My_queue_id)+'A'
+		data = [ turn_prop[(agent_id , queue_id)] * Vars[1][0].value , Duals['A'][(agent_id, queue_id)] ]
+		comm.send( data , dest = agent_id , tag = TAG )	
 
+def send_rel_vars_eqn_D(Vars , Duals , Up_queue , My_queue_id ):
+	comm = MPI.COMM_WORLD
+	rank = comm.Get_rank()		
+	
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		TAG = str(rank) + '_' + str(queue_id) +'_' +str(My_queue_id)+'D'
+		data = [ Vars[12][0].value , Dual['D'][(agent_id, queue_id)] ]
+		comm.send( data , dest = agent_id , tag = TAG )
 
+def send_rel_vars_eqn_E(Vars , Duals , Up_queue , turn_prop , My_queue_id ):		
+	comm = MPI.COMM_WORLD
+	rank = comm.Get_rank()
 
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		TAG = str(rank) + '_' + str(queue_id) + '_' +str(My_queue_id) + 'E'
+		data = [ turn_prop[(agent_id , queue_id)] * Vars[2][0].value , Dual['E'][(agent_id, queue_id)] ]
+		comm.send( data , dest = agent_id , tag = TAG )	
 
+def receive_rel_vars(Vars , Duals, Up_queue , Down_queue , My_queue_id ):
+	neigh_vars_data = dict()
+	receive_rel_vars_A(Vars , Duals , Up_queue , My_queue_id , neigh_vars_data)
+	receive_rel_vars_D(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data)
+	receive_rel_vars_E(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data)
+	return neigh_vars_data
+
+def receive_rel_vars_A(Vars , Duals , Up_queue , My_queue_id , neigh_vars_data):
+	comm = MPI.COMM_WORLD
+	rank = comm.Get_rank()
+	neigh_vars_data['A'] = dict()
+
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		TAG = str(agent_id)+'_'+str(My_queue_id)+ '_' + str(queue_id) + 'A'
+		data = comm.recv(source = agent_id , tag = TAG)	
+		neigh_vars_data['A'][(agent_id , queue_id)] = data
+
+def receive_rel_vars_D(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data):
+	comm = MPI.COMM_WORLD
+	rank = comm.Get_rank()
+	neigh_vars_data['D'] = dict()
+
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		TAG = str(agent_id)+'_'+str(My_queue_id)+ '_' + str(queue_id) + 'D'
+		data = comm.recv(source = agent_id , tag = TAG)	
+		neigh_vars_data['D'][(agent_id , queue_id)] = data
+
+def receive_rel_vars_E(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data):
+	comm = MPI.COMM_WORLD
+	rank = comm.Get_rank()
+	neigh_vars_data['E'] = dict()
+
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		TAG = str(agent_id)+'_'+str(My_queue_id)+ '_' + str(queue_id) + 'E'
+		data = comm.recv(source = agent_id , tag = TAG)	
+		neigh_vars_data['E'][(agent_id , queue_id)] = data		
+
+def solve_coupling_eqns_send_sols(Vars , Duals , Up_queue , Down_queue , My_queue_id , neigh_data , arr_rate ):
+	solve_send_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate )
+	solve_send_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data )
+	solve_send_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data )
+
+def solve_send_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate ):
+	Conses_neigh_vars = dict()
+	solve_eqn_2	( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , Conses_neigh_vars )
+	send_solved_eqn(Conses_neigh_vars , Up_queue , My_queue_id , 2)	
+
+def solve_send_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data ):
+	Conses_neigh_vars = dict()
+	solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars )
+	send_solved_eqn(Conses_neigh_vars , Down_queue , My_queue_id , 4)
+
+def solve_send_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data ):
+	Conses_neigh_vars = dict()
+	solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars )
+	send_solved_eqn(Conses_neigh_vars , Down_queue , My_queue_id , 5)		
+
+def solve_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , Conses_neigh_vars ):
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		Conses_neigh_vars[(agent_id , queue_id)] = Variable(1)
+
+	BZ_Var = Variable(1)
+	var = Vars[1][0] - (arr_rate * Vars[8][0]) - BZ_Var	
+	obj = ( Duals['B'] * var ) + ( Constants.ADMM_PEN * var/2.0 )
+
+	coup_var = -1.0 * BZ_Var
+
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		var = Conses_neigh_vars[(agent_id , queue_id)]
+		agent_obj  = neigh_data['A'][(agent_id , queue_id)][1] * (neigh_data['A'][(agent_id , queue_id)][0] - var)
+		agent_obj = agent_obj + Constants.ADMM_PEN * square(neigh_data['A'][(agent_id , queue_id)][0] - var)/2.0
+		obj = obj + agent_obj
+		coup_var = coup_var + var
+
+	obj = obj + ( Duals['1'] * coup_var ) + Constants.ADMM_PEN * square(coup_var)/2.0
+	prob = Minimize(obj)
+
+	Vars[15][0] = BZ_Var.value
+
+def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars ):
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		Conses_neigh_vars[(agent_id , queue_id)] = Variable(1)
+
+	CZ_Var = Variable(1)
+	var = Vars[13][0] - CZ_Var
+	obj = (Duals['C'] * var) + Constants.ADMM_PEN * square(var)/2.0
+
+	coup_var = -1.0 * CZ_Var
+
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		var = Conses_neigh_vars[(agent_id , queue_id)]
+		agent_obj = neigh_data['D'][(agent_id , queue_id)][1] * (neigh_data['D'][(agent_id , queue_id)][0] - var)
+		agent_obj = agent_obj + Constants.ADMM_PEN * square(neigh_data['D'][(agent_id , queue_id)][0] - var)/2.0
+		obj = obj + agent_obj
+		coup_var = coup_var + var
+
+	obj = obj + (Duals['4'] * coup_var) + Constants.ADMM_PEN * square(coup_var)/2.0
+	prob = Minimize(obj)
+	Vars[16][0] = CZ_Var.value	
+
+def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars ):
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		Conses_neigh_vars[(agent_id , queue_id)] = Variable(1)
+
+	EZ_Var = Variable(1)
+	var = Vars[6][0] - EZ_Var
+	obj = (Duals['E'] * var) + Constants.ADMM_PEN * square(var)/2.0
+
+	coup_var = -1.0 * EZ_Var	
+
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		var = Conses_neigh_vars[(agent_id , queue_id)]
+		agent_obj = neigh_data['E'][(agent_id , queue_id)][1] * ( var - neigh_data['E'][(agent_id , queue_id)][0] )
+		agent_obj = agent_obj + Constants.ADMM_PEN * square( var - neigh_data['E'][(agent_id , queue_id)][0] )/2.0
+		obj = obj + agent_obj
+		coup_var = coup_var + var
+
+	obj = obj + (Duals['5'] * coup_var) + Constants.ADMM_PEN * square(coup_var)/2.0
+	prob = Minimize(obj)
+	Vars[18][0] = EZ_Var.value	
+
+def send_solved_eqn(Conses_neigh_vars , Queue , My_queue_id , eqn_type):
+	comm = MPI.COMM_WORLD
+	
+	for i in range(len(Queue)):
+		agent_id = Queue[i]._agent_id
+		queue_id = Queue[i]._queue_id
+		TAG = str(agent_id) + '_' + str(queue_id) + '_' + str(My_queue_id) + str(eqn_type)
+		comm.send( Conses_neigh_vars[(agent_id , queue_id)].value , dest = agent_id , tag = TAG )
+
+def recv_update_solved_vars(Vars , My_agent_id , My_queue_id , Up_queue , Down_queue):
+	recv_updated_solved_vars(Vars , My_agent_id , My_queue_id , 2 , Down_queue , 14)
+	recv_updated_solved_vars(Vars , My_agent_id , My_queue_id , 4 , Up_queue , 17)
+	recv_updated_solved_vars(Vars , My_agent_id , My_queue_id , 5 , Up_queue , 19)
+
+def recv_updated_solved_vars(Vars , My_agent_id , My_queue_id , eqn_type , Queue , var_index):
+	comm = MPI.COMM_WORLD
+
+	for i in range(len(Queue)):
+		agent_id = Queue[i]._agent_id
+		queue_id = Queue[i]._queue_id
+		TAG = str(My_agent_id)+'_'+str(My_queue_id)+'_'+str(queue_id)+str(eqn_type)
+		data = comm.recv(source = agent_id , tag = TAG)
+		Vars[var_index][(agent_id, queue_id)] = data
