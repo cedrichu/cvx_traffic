@@ -91,7 +91,7 @@ def Variable_Initialization(Up_queue, Down_queue):
 
 	return Vars , Dual
 
-def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub):
+def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub , queue_cap):
 	constraints = []
 	
 	eqn1 = Create_eqn_1(Vars, lb, ub)
@@ -103,7 +103,7 @@ def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub):
 	eqn4 = Create_eqn_4_partial(Vars, lb, ub)
 	constraints.append(eqn4)
 
-	eqn6 = Create_eqn_6(Vars, lb, ub)
+	eqn6 = Create_eqn_6(Vars, lb, ub , queue_cap)
 	constraints.append(eqn6)
 
 	eqn7 = Create_eqn_7(Vars, lb, ub)
@@ -129,14 +129,14 @@ def Create_eqn_4_partial(Vars , lb, ub):
 	eqns.append( Construct_McCormick( Vars[12][0] , Vars[3][0] , Vars[1][0] , lb[12][0] , ub[12][0] , lb[3][0] , ub[3][0] ) )  #eqn 13
 	return eqns
 
-def Create_eqn_6(Vars , lb , ub ):
+def Create_eqn_6(Vars , lb , ub , queue_cap ):
 	eqns = []
 
 	var_lb = lb[7][0]
 	var_ub = ub[7][0]
 
-	K1 =  ((1 - var_lb)/var_lb) * ( (1/(1 - (var_lb ** (Constants.QUEUE_LENGTH+1)))) - 1 )  
-	K2 =  ((1 - var_ub)/var_ub) * ( (1/(1 - (var_ub ** (Constants.QUEUE_LENGTH+1)))) - 1 )
+	K1 =  ((1 - var_lb)/var_lb) * ( (1/(1 - (var_lb ** (queue_cap+1)))) - 1 )  
+	K2 =  ((1 - var_ub)/var_ub) * ( (1/(1 - (var_ub ** (queue_cap+1)))) - 1 )
 
 	eqns.append( ((K2 - K1)*( Vars[7][0] - var_lb )) + ((var_ub - var_lb)*K1) >=  (var_ub - var_lb)*Vars[2][0] )
 
@@ -384,7 +384,7 @@ def solve_send_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data ):
 def solve_send_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data ):
 	Conses_neigh_vars = dict()
 	solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars )
-	send_solved_eqn(Conses_neigh_vars , Down_queue , My_queue_id , 5)		
+	send_solved_eqn(Conses_neigh_vars , Down_queue , My_queue_id , 5)	
 
 def solve_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , Conses_neigh_vars ):
 	for i in range(len(Up_queue)):
@@ -411,6 +411,8 @@ def solve_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate ,
 	prob = Minimize(obj)
 
 	Vars[15][0] = BZ_Var.value
+	#dual update of coupling constraint 1
+	Duals['1'] = Duals['1'] + Constants.ADMM_PEN * ( coup_var.value )
 
 def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars ):
 	for i in range(len(Down_queue)):
@@ -435,7 +437,9 @@ def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 
 	obj = obj + (Duals['4'] * coup_var) + Constants.ADMM_PEN * square(coup_var)/2.0
 	prob = Minimize(obj)
-	Vars[16][0] = CZ_Var.value	
+	Vars[16][0] = CZ_Var.value
+	#dual update of coupling constraint 4
+	Duals['4'] = Duals['4'] + Constants.ADMM_PEN * ( coup_var.value )	
 
 def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars ):
 	for i in range(len(Down_queue)):
@@ -461,6 +465,8 @@ def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 	obj = obj + (Duals['5'] * coup_var) + Constants.ADMM_PEN * square(coup_var)/2.0
 	prob = Minimize(obj)
 	Vars[18][0] = EZ_Var.value	
+	#dual update of coupling constraint 5
+	Duals['5'] = Duals['5'] + Constants.ADMM_PEN * ( coup_var.value )	
 
 def send_solved_eqn(Conses_neigh_vars , Queue , My_queue_id , eqn_type):
 	comm = MPI.COMM_WORLD

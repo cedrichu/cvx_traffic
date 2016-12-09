@@ -130,7 +130,8 @@ class TrafficAgentModel(object):
 		for i in range(self._local_queue_num):	
 			self.get_local_queue(i).recv_update_solved_vars()			
 
-	
+	#updates only dual variables corresponding to consensus constraints, 
+	#dual variables w.r.t coupling constraints are updated in previous solve_send_vars() of Update_consensus_vars() 
 	def Update_Dual_Vars(self):
 		for i in range(self._local_queue_num):
 			self.get_local_queue(i).Update_Dual_Vars()
@@ -217,7 +218,7 @@ class TrfficQueue(object):
 		return str(self._agent_id)+' '+str(self._queue_id)
 
 	def create_constraints(self):
-	 	return Solver.Create_constraints_for_queue(self._vars , self._upstream_queue, self._downstream_queue, self.lb, self.ub)
+	 	return Solver.Create_constraints_for_queue(self._vars , self._upstream_queue, self._downstream_queue, self.lb, self.ub , self._capacity)
 
 	def get_constraints(self):
 		_constraints = self.create_constraints()
