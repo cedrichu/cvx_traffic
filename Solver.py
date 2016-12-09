@@ -85,12 +85,6 @@ def Variable_Initialization(Up_queue, Down_queue):
 		Vars[19][(agent_id, queue_id)] = 0			#19 - Fz_i^j 
 		Dual['F'][(agent_id, queue_id)] = 0
 	  
-	Vars.append([])
-	Vars[20].append(0)
-
-	Vars.append([])
-	Vars[21].append(0)
-
 	return Vars , Dual
 
 def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub):
@@ -170,7 +164,7 @@ def Construct_Fractional_Envelope(var1 , var2 , lb1 , ub1 , lb2 , ub2 ):
 
 	return eqns
 
-def Get_queue_objective(Vars, Duals, Up_queue, Down_queue , ext_arr_rate , turn_prop):
+def Get_total_queue_objective(Vars, Duals, Up_queue, Down_queue , ext_arr_rate , turn_prop):
 	obj = inv_pos(1 - Vars[7][0]) - 1
 	obj = obj + Get_dual_objective_eqn_2(Vars, Duals, Down_queue , ext_arr_rate , turn_prop)
 	obj = obj + Get_dual_objective_eqn_4(Vars, Duals, Up_queue)
@@ -178,8 +172,8 @@ def Get_queue_objective(Vars, Duals, Up_queue, Down_queue , ext_arr_rate , turn_
 	return obj
 
 def Get_dual_objective_eqn_2(Vars, Duals , Down_queue , ext_arr_rate , turn_prop):	
-	obj = Get_dual_objective_eqnA(Vars , Duals , Down_queue , turn_prop)
-	obj = obj + Get_dual_objective_eqnB(Vars , Duals , ext_arr_rate)
+	obj = Get_dual_objective_eqn_A(Vars , Duals , Down_queue , turn_prop)
+	obj = obj + Get_dual_objective_eqn_B(Vars , Duals , ext_arr_rate)
 	return obj	
 
 def Get_dual_objective_eqn_4(Vars , Duals , Up_queue):

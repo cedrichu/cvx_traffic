@@ -218,9 +218,6 @@ class TrfficQueue(object):
 
 	def __repr__(self):
 		return str(self._agent_id)+' '+str(self._queue_id)
-		
-
-
 
 	def create_constraints(self):
 	 	return Solver.Create_constraints_for_queue(self._vars , self._upstream_queue, self._downstream_queue, self.lb, self.ub)
@@ -230,7 +227,7 @@ class TrfficQueue(object):
 	 	return _constraints	
 
 	def get_objective(self):
-		return Solver.Get_queue_objective(self.vars, self.dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop) 	
+		return Solver.Get_total_queue_objective(self.vars, self.dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop) 	
 
 	def Update_Dual_Vars(self):
 		return Solver.Update_Dual_Vars(self.vars, self.dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop)
