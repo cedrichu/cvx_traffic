@@ -1,6 +1,6 @@
 import numpy as np
-#from mpi4py import MPI
-#from cvxpy import *
+from mpi4py import MPI
+from cvxpy import *
  
 
 class TrafficNetwork(object):
@@ -24,8 +24,6 @@ class TrafficNetwork(object):
 
 	def __repr__(self):
 		return str([v._agent_id for v in self._vertex])
-
-
 
 
 class TrafficAgentModel(object):
@@ -54,15 +52,22 @@ class TrafficAgentModel(object):
 			self._local_queue[edge[1]].set_upstream(neighbor.get_local_queue(q))
 			neighbor.get_local_queue(q).set_downstream(self._local_queue[edge[1]])
 
+	def set_ext_arr_rate(self, rate):
+		for idx,q  in enumerate(self._local_queue):
+			q.set_ext_arr_rate(rate[idx])
+
 	def set_turn_prop(self):
 		for v in self._local_queue:
-			v.set_turn_prop([0.1,0.8,0.1])
+			v.set_turn_prop()
 
 	def get_local_queue(self, queue_id):
 		return self._local_queue[queue_id]
 
+	def get_agent_id(self):
+		return self._agent_id
+
 	def __repr__(self):
-		return str([self._agent_id, [v._agent_id for v in self._neighbor_agents]])
+		return str([self._agent_id, [v.get_agent_id() for v in self._neighbor_agents]])
 
 	def get_queue_sum_sat_constraint(self):
 		eqn = Variable()
@@ -93,29 +98,28 @@ class TrafficAgentModel(object):
 		return obj	
 
 	
-	# def get_new_data(self):
-	# 	comm = MPI.COMM_WORLD
-	# 	lb = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_LOWER_BOUNDS)	
-	# 	ub = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_UPPER_BOUNDS)
-	# 	dual = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_DUAL_VARS)
-	# 	self.set_new_data(lb, ub, dual)
+	def get_new_data(self):
+		comm = MPI.COMM_WORLD
+		lb = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_LOWER_BOUNDS)	
+		ub = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_UPPER_BOUNDS)
+		dual = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_DUAL_VARS)
+		self.set_new_data(lb, ub, dual)
 
-	# def set_new_data(self, lb , ub , dual):	
-	# 	self.lb = lb
-	# 	self.ub = ub
-	# 	self.dual = dual
+	def set_new_data(self, lb , ub , dual):	
+		self.lb = lb
+		self.ub = ub
+		self.dual = dual
 
-	# def construct_prob(self):
-	# 	comm = MPI.COMM_WORLD
-	# 	comm.send(lb , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_LB)	
-	# 	comm.send(ub , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_UB)
-	# 	comm.send(dual , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_DUAL)
+	def construct_prob(self):
+		comm = MPI.COMM_WORLD
+		comm.send(lb , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_LB)	
+		comm.send(ub , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_UB)
+		comm.send(dual , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_DUAL)
 
-	# def admm_optimize(self):
-	# 	#HCH - Fill
-	# 	return	
+	def admm_optimize(self):
+		#HCH - Fill
+		return	
 		
-
 	def Update_consensus_vars(self):
 		for i in range(self._local_queue_num):
 			self.get_local_queue(i).send_rel_vars()
@@ -143,7 +147,6 @@ class TrafficAgentModel(object):
 
 			self.Update_consensus_vars()
 			self.Update_Dual_Vars()	 		
-
 	
 class TrfficQueue(object):
 	def __init__(self, agent_id, queue_id):
@@ -185,6 +188,7 @@ class TrfficQueue(object):
 		'''constants'''
 		self._turn_prop = {}
 		self._ext_arr_rate = 0
+		self._capacity = 20
 
 
 	def set_upstream(self, queue):
@@ -193,15 +197,29 @@ class TrfficQueue(object):
 	def set_downstream(self, queue):
 		self._downstream_queue.append(queue)
 
-	def set_turn_prop(self, prop):
+	def set_turn_prop(self, prop=[0.1,0.8,0.1]):
 		for idx, v in enumerate(self._downstream_queue):
 			self._turn_prop[(v._agent_id, v._queue_id)] = prop[idx]
 
 	def set_ext_arr_rate(self, rate):
 		self._ext_arr_rate = rate
 
+	def set_capacity(self, capacity):
+		self._capacity = capacity
+
+	def get_agent_id(self):
+		return self._agent_id
+
+	def get_queue_id(self):
+		return self._queue_id
+
 	def get_turning_prop(self, agent_id, queue_id):
-		return self._turn_prop[(agent_id, queue_id)]		
+		return self._turn_prop[(agent_id, queue_id)]
+
+	def __repr__(self):
+		return str(self._agent_id)+' '+str(self._queue_id)
+		
+
 
 
 	def create_constraints(self):
@@ -227,12 +245,19 @@ class TrfficQueue(object):
 	def recv_solved_vars():
 
 def main():
+	'''create agents'''
 	queue_num = 4
 	t1 = TrafficAgentModel(0,queue_num)
 	t2 = TrafficAgentModel(1,queue_num)
 	t3 = TrafficAgentModel(2,queue_num)
 	t4 = TrafficAgentModel(3,queue_num)
 	agent_list = [t1,t2,t3,t4]
+	'''specify external arrival rates'''
+	t1.set_ext_arr_rate([10,0,0,10])
+	t2.set_ext_arr_rate([10,10,0,0])
+	t3.set_ext_arr_rate([0,10,10,0])
+	t4.set_ext_arr_rate([0,0,10,10])
+	'''specify connection'''
 	n = len(agent_list)
 	adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
 	adjacent_matrix[0][1] = [[0,3,2],3]
@@ -243,11 +268,16 @@ def main():
 	adjacent_matrix[1][0] = [[0,1,2],1]
 	adjacent_matrix[2][1] = [[1,2,3],2]
 	adjacent_matrix[2][3] = [[0,1,2],1]
-	print adjacent_matrix
+	'''construct network'''
 	network = TrafficNetwork(agent_list, adjacent_matrix)
+
+	'''for testing'''
+	print adjacent_matrix
 	print network
 	for t in agent_list:
 		print t
+	for q in t1._local_queue:
+		print q
 	
 
 
