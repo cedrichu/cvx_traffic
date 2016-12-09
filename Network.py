@@ -197,6 +197,13 @@ class TrfficQueue(object):
 		self.lb.append(0)
 		self.lb += [self._epsilon]*2
 		self.lb += [0]*3
+
+		self.lb.append(1/self._speed_limit)
+		self.lb.append(0)
+		self.lb.append(1/self._speed_limit)
+		self.lb.append(0)
+		self.lb.append(0)
+
 		self.lb.append([0]*len(self._downstream_queue))
 		self.lb.append(-self._speed_limit)
 		self.lb.append(0)
@@ -209,6 +216,14 @@ class TrfficQueue(object):
 		self.ub.append(1)
 		self.ub += [self._speed_limit]*2
 		self.ub += [1]*3
+
+		self.ub.append(1/self._epsilon)
+		self.ub.append(1/self._epsilon)
+		self.ub.append(1/self._epsilon)
+		self.ub.append(self._speed_limit/self._epsilon)
+		self.ub.append(self._speed_limit/self._epsilon)
+
+
 		ub_consus_down= []
 		for v in self._downstream_queue:
 			ub_consus_down.append(self._speed_limit*self._turn_prop[(v.get_agent_id(), v.get_queue_id())])
