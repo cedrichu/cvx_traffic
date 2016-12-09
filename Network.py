@@ -189,7 +189,7 @@ class TrfficQueue(object):
 		self._turn_prop = {}
 		self._ext_arr_rate = 0
 		self._capacity = 20
-		self._epsilon = 0.1
+		self._epsilon = 0.01
 		self._speed_limit = 20.0
 
 	def init_lb(self):
@@ -199,9 +199,9 @@ class TrfficQueue(object):
 		self.lb += [self._epsilon]*2
 		self.lb.append(self._epsilon)
 
-		self.lb.append(1/self._speed_limit)
 		self.lb.append(self._epsilon)
-		self.lb.append(1/self._speed_limit)
+		self.lb.append(self._epsilon)
+		self.lb.append(self._epsilon)
 		self.lb.append(self._epsilon)
 		self.lb.append(self._epsilon)
 
