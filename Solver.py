@@ -297,7 +297,7 @@ def Update_Dual_Vars_eqn_F(Vars, Duals, turn_prop):
 def send_rel_vars(Vars , Duals, Up_queue , Down_queue , turn_prop , My_queue_id):
 	send_rel_vars_eqn_A( Vars , Duals , Down_queue , turn_prop , My_queue_id , lb , ub )
 	send_rel_vars_eqn_D(Vars , Duals , Up_queue , My_queue_id ,lb , ub)
-	send_rel_vars_eqn_E(Vars , Duals , Up_queue , turn_prop , My_queue_id , lb , ub )
+	send_rel_vars_eqn_F(Vars , Duals , Up_queue , turn_prop , My_queue_id , lb , ub )
 
 def send_rel_vars_eqn_A( Vars , Duals , Down_queue , turn_prop , My_queue_id , lb , ub):
 	comm = MPI.COMM_WORLD
@@ -321,22 +321,22 @@ def send_rel_vars_eqn_D(Vars , Duals , Up_queue , My_queue_id ):
 		data = [ Vars[12][0].value , Dual['D'][(agent_id, queue_id)] , lb[17][(agent_id, queue_id)], ub[17][(agent_id, queue_id)] ]
 		comm.send( data , dest = agent_id , tag = TAG )
 
-def send_rel_vars_eqn_E(Vars , Duals , Up_queue , turn_prop , My_queue_id ):		
+def send_rel_vars_eqn_F(Vars , Duals , Up_queue , turn_prop , My_queue_id ):		
 	comm = MPI.COMM_WORLD
 	rank = comm.Get_rank()
 
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
-		TAG = str(rank) + '_' + str(queue_id) + '_' +str(My_queue_id) + 'E'
-		data = [ turn_prop[(agent_id , queue_id)] * Vars[2][0].value , Dual['E'][(agent_id, queue_id)], lb[19][(agent_id, queue_id)], ub[19][(agent_id, queue_id)] ]
+		TAG = str(rank) + '_' + str(queue_id) + '_' +str(My_queue_id) + 'F'
+		data = [ turn_prop[(agent_id , queue_id)] * Vars[2][0].value , Dual['F'][(agent_id, queue_id)], lb[19][(agent_id, queue_id)], ub[19][(agent_id, queue_id)] ]
 		comm.send( data , dest = agent_id , tag = TAG )	
 
 def receive_rel_vars(Vars , Duals, Up_queue , Down_queue , My_queue_id ):
 	neigh_vars_data = dict()
 	receive_rel_vars_A(Vars , Duals , Up_queue , My_queue_id , neigh_vars_data)
 	receive_rel_vars_D(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data)
-	receive_rel_vars_E(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data)
+	receive_rel_vars_F(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data)
 	return neigh_vars_data
 
 def receive_rel_vars_A(Vars , Duals , Up_queue , My_queue_id , neigh_vars_data):
@@ -363,17 +363,17 @@ def receive_rel_vars_D(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data
 		data = comm.recv(source = agent_id , tag = TAG)	
 		neigh_vars_data['D'][(agent_id , queue_id)] = data
 
-def receive_rel_vars_E(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data):
+def receive_rel_vars_F(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data):
 	comm = MPI.COMM_WORLD
 	rank = comm.Get_rank()
-	neigh_vars_data['E'] = dict()
+	neigh_vars_data['F'] = dict()
 
 	for i in range(len(Down_queue)):
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
-		TAG = str(agent_id)+'_'+str(My_queue_id)+ '_' + str(queue_id) + 'E'
+		TAG = str(agent_id)+'_'+str(My_queue_id)+ '_' + str(queue_id) + 'F'
 		data = comm.recv(source = agent_id , tag = TAG)	
-		neigh_vars_data['E'][(agent_id , queue_id)] = data		
+		neigh_vars_data['F'][(agent_id , queue_id)] = data		
 
 def solve_coupling_eqns_send_sols(Vars , Duals , Up_queue , Down_queue , My_queue_id , neigh_data , arr_rate ):
 	solve_send_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate )
@@ -489,11 +489,11 @@ def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
 		var = Conses_neigh_vars[(agent_id , queue_id)]
-		agent_obj = neigh_data['E'][(agent_id , queue_id)][1] * ( var - neigh_data['E'][(agent_id , queue_id)][0] )
-		agent_obj = agent_obj + Constants.ADMM_PEN * square( var - neigh_data['E'][(agent_id , queue_id)][0] )/2.0
+		agent_obj = neigh_data['F'][(agent_id , queue_id)][1] * ( var - neigh_data['F'][(agent_id , queue_id)][0] )
+		agent_obj = agent_obj + Constants.ADMM_PEN * square( var - neigh_data['F'][(agent_id , queue_id)][0] )/2.0
 
-		constraints.append(var >= neigh_data['E'][(agent_id , queue_id)][2])
-		constraints.append(var <= neigh_data['E'][(agent_id , queue_id)][3])
+		constraints.append(var >= neigh_data['F'][(agent_id , queue_id)][2])
+		constraints.append(var <= neigh_data['F'][(agent_id , queue_id)][3])
 
 		obj = obj + agent_obj
 		coup_var = coup_var + var
