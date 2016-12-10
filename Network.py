@@ -295,7 +295,7 @@ class TrafficQueue(object):
 
 	def set_turn_prop_up(self):
 		for idx, v in enumerate(self._upstream_queue):
-			self._turn_prop_up[(v._agent_id, v._queue_id)] = v.get_turn_prop[(self._agent_id, self._queue_id)]
+			self._turn_prop_up[(v._agent_id, v._queue_id)] = v.get_turn_prop(self._agent_id, self._queue_id)
 
 	def set_ext_arr_rate(self, rate):
 		self._ext_arr_rate = rate
