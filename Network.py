@@ -85,19 +85,24 @@ class TrafficAgentModel(object):
 
 	def get_queue_sum_sat_constraint(self):
 		eqn = Variable()
-		constraint = []
-
+		
 		for i in range(self._local_queue_num):
 			eqn = eqn + self.get_local_queue(i)._vars[4][0]
 		
-		constraint.append(eqn == self._sat_flow_rate)
-		return constraint
-
+		return [eqn == self._sat_flow_rate]
+		
 	def get_all_constraints(self):
 		constraints = []
 
 		for i in range(self._local_queue_num):
 			constraints += self.get_local_queue(i).get_constraints()	
+
+		comm = MPI.COMM_WORLD
+		rank = comm.Get_rank()	
+
+		if(1 == rank):
+			for i in range(len(constraints)):
+				print constraints[i]
 
 		constraints += self.get_queue_sum_sat_constraint()	
 		return constraints	
@@ -162,6 +167,8 @@ class TrafficAgentModel(object):
 	 		prob = Problem(Minimize(obj), constraints)
 			prob.solve()
 
+			
+			
 			self.Update_consensus_vars()
 			self.Update_Dual_Vars()	 		
 	
@@ -335,16 +342,16 @@ class TrafficQueue(object):
 	def Update_Dual_Vars(self):
 		return Solver.Update_Dual_Vars(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop, self._turn_prop_up)
 
-	def send_rel_vars():
-		return Solver.send_rel_vars(self._vars , self._dual_vars , self._upstream_queue, self._downstream_queue, self._turn_prop , self._queue_id , self.lb , self.ub , self.__turn_prop_up)
+	def send_rel_vars(self):
+		return Solver.send_rel_vars(self._vars , self._dual_vars , self._upstream_queue, self._downstream_queue, self._turn_prop , self._queue_id , self.lb , self.ub , self._turn_prop_up)
 		
-	def receive_rel_vars():
+	def receive_rel_vars(self):
 		return Solver.receive_rel_vars(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id )
 
-	def solve_send_vars(neigh_data):
+	def solve_send_vars(self , neigh_data):
 		return Solver.solve_coupling_eqns_send_sols(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id , neigh_data , self._ext_arr_rate)
 
-	def recv_update_solved_vars():
+	def recv_update_solved_vars(self):
 		return Solver.recv_update_solved_vars(self._vars , self._agent_id , self._queue_id , self._upstream_queue , self._downstream_queue)
 
 def main():

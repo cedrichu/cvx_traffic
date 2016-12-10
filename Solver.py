@@ -128,16 +128,16 @@ def Create_eqn_3(Vars , lb, ub):
 	eqns = []
 
 	eqns.append( Vars[11][0] + Vars[10][0] ==  Vars[9][0] )     #eqn above 9
-	eqns.append( Construct_Fractional_Envelope( Vars[9][0] , Vars[3][0] , lb[9][0] , ub[9][0] , lb[3][0] , ub[3][0] ) )       #eqn 9
-	eqns.append( Construct_Fractional_Envelope( Vars[11][0] , Vars[4][0] , lb[11][0] , ub[11][0] , lb[4][0] , ub[4][0] ) )	  #eqn10	
-	eqns.append( Construct_McCormick( Vars[5][0] , Vars[10][0] , Vars[6][0] , lb[5][0] , ub[5][0] , lb[10][0] , ub[10][0] ) )  #eqn 11
+	eqns += Construct_Fractional_Envelope( Vars[9][0] , Vars[3][0] , lb[9][0] , ub[9][0] , lb[3][0] , ub[3][0] )        #eqn 9
+	eqns += Construct_Fractional_Envelope( Vars[11][0] , Vars[4][0] , lb[11][0] , ub[11][0] , lb[4][0] , ub[4][0] ) 	  #eqn10	
+	eqns += Construct_McCormick( Vars[5][0] , Vars[10][0] , Vars[6][0] , lb[5][0] , ub[5][0] , lb[10][0] , ub[10][0] )   #eqn 11
 
 	return eqns
 
 def Create_eqn_4_partial(Vars , lb, ub):
 	eqns = []
-	eqns.append( Construct_McCormick( Vars[13][0] , Vars[5][0] , Vars[1][0] , lb[13][0] , ub[13][0] , lb[5][0] , ub[5][0] ) )  #eqn 12
-	eqns.append( Construct_McCormick( Vars[12][0] , Vars[3][0] , Vars[1][0] , lb[12][0] , ub[12][0] , lb[3][0] , ub[3][0] ) )  #eqn 13
+	eqns += Construct_McCormick( Vars[13][0] , Vars[5][0] , Vars[1][0] , lb[13][0] , ub[13][0] , lb[5][0] , ub[5][0] )   #eqn 12
+	eqns += Construct_McCormick( Vars[12][0] , Vars[3][0] , Vars[1][0] , lb[12][0] , ub[12][0] , lb[3][0] , ub[3][0] )   #eqn 13
 	return eqns
 
 def Create_eqn_6(Vars , lb , ub , queue_cap ):
@@ -296,7 +296,7 @@ def Update_Dual_Vars_eqn_F(Vars, Duals, turn_prop):
 		var = Vars[19][(agent_id , queue_id)] - (turn_prop[(agent_id , queue_id)] * Vars[2][0])	
 		Dual['F'][(agent_id , queue_id)] = Dual['F'][(agent_id , queue_id)] + ( Constants.ADMM_PEN * var )	
 	
-def send_rel_vars(Vars , Duals, Up_queue , Down_queue , turn_prop , My_queue_id , up_turn_prop):
+def send_rel_vars(Vars , Duals, Up_queue , Down_queue , turn_prop , My_queue_id , lb, ub , up_turn_prop):
 	send_rel_vars_eqn_A( Vars , Duals , Down_queue , turn_prop , My_queue_id , lb , ub )
 	send_rel_vars_eqn_D(Vars , Duals , Up_queue , My_queue_id ,lb , ub)
 	send_rel_vars_eqn_F(Vars , Duals , Up_queue , up_turn_prop , My_queue_id , lb , ub )
@@ -309,7 +309,7 @@ def send_rel_vars_eqn_A( Vars , Duals , Down_queue , turn_prop , My_queue_id , l
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
 		TAG = str(rank)+'_'+str(queue_id)+'_' +str(My_queue_id)+'A'
-		data = [ turn_prop[(agent_id , queue_id)] * Vars[1][0].value , Duals['A'][(agent_id, queue_id) , lb[14][(agent_id , queue_id)], ub[14][(agent_id , queue_id)]] ]
+		data = [ turn_prop[(agent_id , queue_id)] * Vars[1][0].value , Duals['A'][(agent_id, queue_id)] , lb[14][(agent_id , queue_id)], ub[14][(agent_id , queue_id)] ]
 		comm.send( data , dest = agent_id , tag = TAG )	
 
 def send_rel_vars_eqn_D(Vars , Duals , Up_queue , My_queue_id ):
