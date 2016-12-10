@@ -194,9 +194,7 @@ if __name__ == '__main__':
 			t = t4
 
 		t.init_queue_solver_vars()	
-		print t.lb
-
-		#t.solve_problems()
+		t.solve_problems()
 	
 
 
