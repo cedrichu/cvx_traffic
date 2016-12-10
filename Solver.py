@@ -95,22 +95,23 @@ def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub , queue_cap
 	constraints = []
 	
 	eqn_bounds = create_lower_upper_bound_constraints(Vars , lb , ub)
-	constraints.append(eqn_bounds)
+	constraints += eqn_bounds
 
 	eqn1 = Create_eqn_1(Vars, lb, ub)
-	constraints.append(eqn1)
+	constraints += eqn1
 
 	eqn3 = Create_eqn_3(Vars, lb, ub)
-	constraints.append(eqn3)
+	constraints += eqn3
 
 	eqn4 = Create_eqn_4_partial(Vars, lb, ub)
-	constraints.append(eqn4)
+	constraints += eqn4
 
 	eqn6 = Create_eqn_6(Vars, lb, ub , queue_cap)
-	constraints.append(eqn6)
+	constraints += eqn6
 
 	eqn7 = Create_eqn_7(Vars, lb, ub)
-	constraints.append(eqn7)
+	constraints += eqn7
+
 	return constraints
 
 def create_lower_upper_bound_constraints(Vars , lb , ub):
