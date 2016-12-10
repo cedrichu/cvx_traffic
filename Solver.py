@@ -177,11 +177,11 @@ def Construct_Fractional_Envelope(var1 , var2 , lb1 , ub1 , lb2 , ub2 ):
 
 	return eqns
 
-def Get_total_queue_objective(Vars, Duals, Up_queue, Down_queue , ext_arr_rate , turn_prop):
+def Get_total_queue_objective(Vars, Duals, Up_queue, Down_queue , ext_arr_rate , turn_prop , up_turn_prop):
 	obj = inv_pos(1 - Vars[7][0]) - 1
 	obj = obj + Get_dual_objective_eqn_2(Vars, Duals, Down_queue , ext_arr_rate , turn_prop)
 	obj = obj + Get_dual_objective_eqn_4(Vars, Duals, Up_queue)
-	obj = obj + Get_dual_objective_eqn_5(Vars, Duals, turn_prop , Up_queue)
+	obj = obj + Get_dual_objective_eqn_5(Vars, Duals, up_turn_prop , Up_queue)
 	return obj
 
 def Get_dual_objective_eqn_2(Vars, Duals , Down_queue , ext_arr_rate , turn_prop):	
@@ -244,10 +244,10 @@ def Get_dual_objective_eqn_F(Vars, Duals, turn_prop , Up_queue):
 		obj = obj + Constants.ADMM_PEN * square(var)/2.0 
 	return obj
 
-def Update_Dual_Vars(Vars , Duals, Up_queue, Down_queue , ext_arr_rate , turn_prop):
+def Update_Dual_Vars(Vars , Duals, Up_queue, Down_queue , ext_arr_rate , turn_prop , up_turn_prop):
 	Update_Dual_Vars_eqn_2(Vars , Duals, Down_queue , ext_arr_rate , turn_prop)	
 	Update_Dual_Vars_eqn_4(Vars, Duals, Up_queue)
-	Update_Dual_Vars_eqn_5(Vars, Duals, turn_prop)
+	Update_Dual_Vars_eqn_5(Vars, Duals, up_turn_prop)
 
 def Update_Dual_Vars_eqn_2(Vars , Duals, Down_queue , ext_arr_rate , turn_prop):
 	Update_Dual_Vars_eqn_A(Vars , Duals , Down_queue , turn_prop)	
@@ -294,10 +294,10 @@ def Update_Dual_Vars_eqn_F(Vars, Duals, turn_prop):
 		var = Vars[19][(agent_id , queue_id)] - (turn_prop[(agent_id , queue_id)] * Vars[2][0])	
 		Dual['F'][(agent_id , queue_id)] = Dual['F'][(agent_id , queue_id)] + ( Constants.ADMM_PEN * var )	
 	
-def send_rel_vars(Vars , Duals, Up_queue , Down_queue , turn_prop , My_queue_id):
+def send_rel_vars(Vars , Duals, Up_queue , Down_queue , turn_prop , My_queue_id , up_turn_prop):
 	send_rel_vars_eqn_A( Vars , Duals , Down_queue , turn_prop , My_queue_id , lb , ub )
 	send_rel_vars_eqn_D(Vars , Duals , Up_queue , My_queue_id ,lb , ub)
-	send_rel_vars_eqn_F(Vars , Duals , Up_queue , turn_prop , My_queue_id , lb , ub )
+	send_rel_vars_eqn_F(Vars , Duals , Up_queue , up_turn_prop , My_queue_id , lb , ub )
 
 def send_rel_vars_eqn_A( Vars , Duals , Down_queue , turn_prop , My_queue_id , lb , ub):
 	comm = MPI.COMM_WORLD

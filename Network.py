@@ -326,13 +326,13 @@ class TrafficQueue(object):
 	 	return _constraints	
 
 	def get_objective(self):
-		return Solver.Get_total_queue_objective(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop) 	
+		return Solver.Get_total_queue_objective(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop , self.__turn_prop_up) 	
 		
 	def Update_Dual_Vars(self):
-		return Solver.Update_Dual_Vars(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop)
+		return Solver.Update_Dual_Vars(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop, self._turn_prop_up)
 
 	def send_rel_vars():
-		return Solver.send_rel_vars(self._vars , self._dual_vars , self._upstream_queue, self._downstream_queue, self._turn_prop , self._queue_id , self.lb , self.ub)
+		return Solver.send_rel_vars(self._vars , self._dual_vars , self._upstream_queue, self._downstream_queue, self._turn_prop , self._queue_id , self.lb , self.ub , self.__turn_prop_up)
 		
 	def receive_rel_vars():
 		return Solver.receive_rel_vars(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id )
