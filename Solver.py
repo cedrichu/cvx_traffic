@@ -159,7 +159,6 @@ def Create_eqn_6(Vars , lb , ub , queue_cap ):
 def Create_eqn_7(Vars, lb, ub):
 	return Construct_McCormick(Vars[7][0] , Vars[3][0] , Vars[0][0] , lb[7][0] , ub[7][0] , lb[3][0] , ub[3][0] )
 
-
 #  var1 * var2 = var3
 def Construct_McCormick(var1 , var2 , var3, lb1 , ub1 , lb2 , ub2 ):
 	eqns = []

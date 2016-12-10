@@ -2,6 +2,7 @@ import numpy as np
 from mpi4py import MPI
 from cvxpy import *
 import Solver 
+import Constants
 
 class TrafficNetwork(object):
 	def __init__(self, agent_list, adjacent_matrix):
@@ -213,9 +214,9 @@ class TrafficQueue(object):
 		self._turn_prop = {}
 		self._turn_prop_up = {}
 		self._ext_arr_rate = 0
-		self._capacity = 20
-		self._epsilon = 0.01
-		self._speed_limit = 20.0
+		self._capacity = Constants.CAPACITY
+		self._epsilon = Constants.EPSILON
+		self._speed_limit = Constants.SPEED_LIMIT
 
 	def init_lb(self):
 		self.lb.append([self._epsilon]) #lambda
