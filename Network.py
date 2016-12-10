@@ -11,6 +11,7 @@ class TrafficNetwork(object):
 		
 		self.connect_queues()
 		self.set_turn_prop()
+		self.set_turn_prop_up()
 
 	def connect_queues(self):
 		for vi in range(self._vertex_num):
@@ -21,6 +22,11 @@ class TrafficNetwork(object):
 	def set_turn_prop(self):
 		for v in self._vertex:
 			v.set_turn_prop()
+
+	def set_turn_prop_up(self):
+		for v in self._vertex:
+			v.set_turn_prop_up()
+
 
 	def __repr__(self):
 		return str([v._agent_id for v in self._vertex])
@@ -63,6 +69,10 @@ class TrafficAgentModel(object):
 	def set_turn_prop(self):
 		for v in self._local_queue:
 			v.set_turn_prop()
+
+	def set_turn_prop_up(self):
+		for v in self._local_queue:
+			v.set_turn_prop_up()
 
 	def get_local_queue(self, queue_id):
 		return self._local_queue[queue_id]
@@ -190,6 +200,7 @@ class TrfficQueue(object):
 
 		'''constants'''
 		self._turn_prop = {}
+		self._turn_prop_up = {}
 		self._ext_arr_rate = 0
 		self._capacity = 20
 		self._epsilon = 0.01
@@ -282,6 +293,10 @@ class TrfficQueue(object):
 		for idx, v in enumerate(self._downstream_queue):
 			self._turn_prop[(v._agent_id, v._queue_id)] = prop[idx]
 
+	def set_turn_prop_up(self):
+		for idx, v in enumerate(self._upstream_queue):
+			self._turn_prop_up[(v._agent_id, v._queue_id)] = v.get_turn_prop[(self._agent_id, self._queue_id)]
+
 	def set_ext_arr_rate(self, rate):
 		self._ext_arr_rate = rate
 
@@ -296,6 +311,9 @@ class TrfficQueue(object):
 
 	def get_turning_prop(self, agent_id, queue_id):
 		return self._turn_prop[(agent_id, queue_id)]
+
+	def get_turning_prop_up(self, agent_id, queue_id):
+		return self._turn_prop_up[(agent_id, queue_id)]
 
 	def __repr__(self):
 		return str(self._agent_id)+' '+str(self._queue_id)
