@@ -219,21 +219,21 @@ class TrafficQueue(object):
 		self._speed_limit = Constants.SPEED_LIMIT
 
 	def init_lb(self):
-		self.lb.append([self._epsilon]) #lambda
+		self.lb.append([0]) #lambda
 		self.lb.append([self._epsilon]) #lambda^eff
-		self.lb.append([self._epsilon]) #P(N = k)
+		self.lb.append([0]) #P(N = k)
 		self.lb.append([self._epsilon]) #mu_eff
 		self.lb.append([self._epsilon]) #mu
 		self.lb.append([self._epsilon]) #mu^tilde
-		self.lb.append([self._epsilon]) #P
-		self.lb.append([self._epsilon]) #rho
-		self.lb.append([self._epsilon]) #v
+		self.lb.append([0]) #P
+		self.lb.append([0]) #rho
+		self.lb.append([0]) #v
 		
-		self.lb.append([self._epsilon]) #d
-		self.lb.append([self._epsilon]) #t
+		self.lb.append([0]) #d
+		self.lb.append([0]) #t
 		self.lb.append([self._epsilon]) #w
-		self.lb.append([self._epsilon]) #f
-		self.lb.append([self._epsilon]) #omega
+		self.lb.append([0]) #f
+		self.lb.append([0]) #omega
 
 
 		lb_consus_down1= {}
@@ -244,12 +244,12 @@ class TrafficQueue(object):
 		self.lb.append([self._epsilon]) #C
 		lb_consus_down2= {}
 		for v in self._upstream_queue:
-			lb_consus_down2[(v.get_agent_id(), v.get_queue_id())] = self._epsilon 
+			lb_consus_down2[(v.get_agent_id(), v.get_queue_id())] = self.lb[12][0] 
 		self.lb.append(lb_consus_down2) #D
-		self.lb.append([self._epsilon]) #E
+		self.lb.append([0]) #E
 		lb_consus_down3= {}
 		for v in self._upstream_queue:
-			lb_consus_down3[(v.get_agent_id(), v.get_queue_id())] = self._epsilon 
+			lb_consus_down3[(v.get_agent_id(), v.get_queue_id())] = 0
 		self.lb.append(lb_consus_down3) #F
 		self.lb.append([1]) #d_i\mu_i^eff
 		self.lb.append([1]) #w_i\mu_i
@@ -267,11 +267,11 @@ class TrafficQueue(object):
 
 
 
-		self.ub.append([1/self._epsilon])#d
-		self.ub.append([1/self._epsilon])#t
-		self.ub.append([1/self._epsilon])#w
-		self.ub.append([self._speed_limit/self._epsilon])#f
-		self.ub.append([self._speed_limit/self._epsilon])#omega
+		self.ub.append([2/self._epsilon])#d
+		self.ub.append([2/self._epsilon])#t
+		self.ub.append([2/self._epsilon])#w
+		self.ub.append([2*self._speed_limit/self._epsilon])#f
+		self.ub.append([2*self._speed_limit/self._epsilon])#omega
 
 
 		ub_consus_down1= {}
@@ -279,7 +279,7 @@ class TrafficQueue(object):
 			ub_consus_down1[(v.get_agent_id(), v.get_queue_id())] = self._speed_limit*self._turn_prop[(v.get_agent_id(), v.get_queue_id())]
 		self.ub.append(ub_consus_down1) #A
 		self.ub.append([self._speed_limit]) #B
-		self.ub.append([self._speed_limit/self._epsilon]) #C
+		self.ub.append([2*len(self._downstream_queue)*self._speed_limit/self._epsilon]) #C
 		ub_consus_down2= {}
 		for v in self._upstream_queue:
 			ub_consus_down2[(v.get_agent_id(), v.get_queue_id())] = self._speed_limit/self._epsilon
