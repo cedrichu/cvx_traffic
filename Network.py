@@ -42,7 +42,7 @@ class TrafficAgentModel(object):
 		self.init_local_queue()
 
 		'''constants'''
-		self._sat_flow_rate = 0
+		self._sat_flow_rate = 20
 
 	def init_local_queue(self):
 		for i in range(self._local_queue_num):
