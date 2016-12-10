@@ -206,12 +206,22 @@ class TrfficQueue(object):
 		self.lb.append([self._epsilon])
 		self.lb.append([self._epsilon])
 
-		self.lb.append([self._epsilon]*len(self._downstream_queue))
+
+		lb_consus_down1= {}
+		for v in self._downstream_queue:
+			lb_consus_down1[(v.get_agent_id(), v.get_queue_id())] = self._epsilon 
+		self.lb.append(lb_consus_down1)
 		self.lb.append([-self._speed_limit])
 		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon]*len(self._upstream_queue))
+		lb_consus_down2= {}
+		for v in self._uptream_queue:
+			lb_consus_down2[(v.get_agent_id(), v.get_queue_id())] = self._epsilon 
+		self.lb.append(lb_consus_down2)
 		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon]*len(self._upstream_queue))
+		lb_consus_down3= {}
+		for v in self._uptream_queue:
+			lb_consus_down3[(v.get_agent_id(), v.get_queue_id())] = self._epsilon 
+		self.lb.append(lb_consus_down3)
 
 	def init_ub(self):
 		self.ub.append([self._speed_limit])
@@ -230,15 +240,22 @@ class TrfficQueue(object):
 		self.ub.append([self._speed_limit/self._epsilon])
 
 
-		ub_consus_down= []
+		ub_consus_down1= {}
 		for v in self._downstream_queue:
-			ub_consus_down.append(self._speed_limit*self._turn_prop[(v.get_agent_id(), v.get_queue_id())])
-		self.ub.append(ub_consus_down)
+			ub_consus_down1[(v.get_agent_id(), v.get_queue_id())] = self._speed_limit*self._turn_prop[(v.get_agent_id(), v.get_queue_id())]
+		self.ub.append(ub_consus_down1)
 		self.ub.append([self._speed_limit])
 		self.ub.append([self._speed_limit/self._epsilon])
-		self.ub.append([self._speed_limit/self._epsilon]*len(self._upstream_queue))
+		ub_consus_down2= {}
+		for v in self._upstream_queue:
+			ub_consus_down2[(v.get_agent_id(), v.get_queue_id())] = self._speed_limit/self._epsilon
+		self.ub.append(ub_consus_down2)
 		self.ub.append([1])
 		self.ub.append([1]*len(self._upstream_queue))
+		ub_consus_down3= {}
+		for v in self._upstream_queue:
+			ub_consus_down3[(v.get_agent_id(), v.get_queue_id())] = 1
+		self.ub.append(ub_consus_down3)
 
 
 
