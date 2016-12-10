@@ -165,10 +165,10 @@ class TrafficAgentModel(object):
 	 		obj = self.get_new_objective()
 
 	 		prob = Problem(Minimize(obj), constraints)
-			prob.solve()
+			prob.solve(verbose=True)
 
-			
-			
+
+
 			self.Update_consensus_vars()
 			self.Update_Dual_Vars()	 		
 	
