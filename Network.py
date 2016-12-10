@@ -191,53 +191,54 @@ class TrfficQueue(object):
 		self._speed_limit = 20.0
 
 	def init_lb(self):
-		self.lb = [self._epsilon]*2
-		self.lb.append(self._epsilon)
-		self.lb += [self._epsilon]*2
-		self.lb += [self._epsilon]*2
-		self.lb.append(self._epsilon)
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
 
-		self.lb.append(self._epsilon)
-		self.lb.append(self._epsilon)
-		self.lb.append(self._epsilon)
-		self.lb.append(self._epsilon)
-		self.lb.append(self._epsilon)
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon])
 
 		self.lb.append([self._epsilon]*len(self._downstream_queue))
-		self.lb.append(-self._speed_limit)
-		self.lb.append(self._epsilon)
+		self.lb.append([-self._speed_limit])
+		self.lb.append([self._epsilon])
 		self.lb.append([self._epsilon]*len(self._upstream_queue))
-		self.lb.append(self._epsilon)
+		self.lb.append([self._epsilon])
 		self.lb.append([self._epsilon]*len(self._upstream_queue))
 
 	def init_ub(self):
-		self.ub = [self._speed_limit]*2
-		self.ub.append(1)
-		self.ub += [self._speed_limit]*2
-		self.ub += [1]*2
-		self.ub.append(self._speed_limit/self._epsilon)
+		self.ub.append([self._speed_limit])
+		self.ub.append([self._speed_limit])
+		self.ub.append([1])
+		self.ub.append([self._speed_limit])
+		self.ub.append([self._speed_limit])
+		self.ub.append([1])
+		self.ub.append([1])
+		self.ub.append([self._speed_limit/self._epsilon])
 
-		self.ub.append(1/self._epsilon)
-		self.ub.append(1/self._epsilon)
-		self.ub.append(1/self._epsilon)
-		self.ub.append(self._speed_limit/self._epsilon)
-		self.ub.append(self._speed_limit/self._epsilon)
+		self.ub.append([1/self._epsilon])
+		self.ub.append([1/self._epsilon])
+		self.ub.append([1/self._epsilon])
+		self.ub.append([self._speed_limit/self._epsilon])
+		self.ub.append([self._speed_limit/self._epsilon])
 
 
 		ub_consus_down= []
 		for v in self._downstream_queue:
 			ub_consus_down.append(self._speed_limit*self._turn_prop[(v.get_agent_id(), v.get_queue_id())])
 		self.ub.append(ub_consus_down)
-		self.ub.append(self._speed_limit)
-		self.ub.append(self._speed_limit/self._epsilon)
+		self.ub.append([self._speed_limit])
+		self.ub.append([self._speed_limit/self._epsilon])
 		self.ub.append([self._speed_limit/self._epsilon]*len(self._upstream_queue))
-		self.ub.append(1)
+		self.ub.append([1])
 		self.ub.append([1]*len(self._upstream_queue))
-
-
-
-
-
 
 
 
