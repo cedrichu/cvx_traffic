@@ -164,10 +164,11 @@ if __name__ == '__main__':
 		t4 = Network.TrafficAgentModel(3,queue_num)
 		agent_list = [t1,t2,t3,t4]
 		'''specify external arrival rates'''
-		t1.set_ext_arr_rate([10,0,0,10])
-		t2.set_ext_arr_rate([10,10,0,0])
-		t3.set_ext_arr_rate([0,10,10,0])
-		t4.set_ext_arr_rate([0,0,10,10])
+		ext_arr_rate = 5.0
+		t1.set_ext_arr_rate([ext_arr_rate,0,0,ext_arr_rate])
+		t2.set_ext_arr_rate([ext_arr_rate,ext_arr_rate,0,0])
+		t3.set_ext_arr_rate([0,ext_arr_rate,ext_arr_rate,0])
+		t4.set_ext_arr_rate([0,0,ext_arr_rate,ext_arr_rate])
 		'''specify connection'''
 		n = len(agent_list)
 		adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 

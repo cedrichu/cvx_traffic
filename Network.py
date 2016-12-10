@@ -43,7 +43,7 @@ class TrafficAgentModel(object):
 		self.init_local_queue()
 
 		'''constants'''
-		self._sat_flow_rate = 20
+		self._sat_flow_rate = Constants.SAT_FLOW_RATE
 
 	def init_local_queue(self):
 		for i in range(self._local_queue_num):
@@ -355,40 +355,40 @@ class TrafficQueue(object):
 	def recv_update_solved_vars(self):
 		return Solver.recv_update_solved_vars(self._vars , self._agent_id , self._queue_id , self._upstream_queue , self._downstream_queue)
 
-def main():
-	'''create agents'''
-	queue_num = 4
-	t1 = TrafficAgentModel(0,queue_num)
-	t2 = TrafficAgentModel(1,queue_num)
-	t3 = TrafficAgentModel(2,queue_num)
-	t4 = TrafficAgentModel(3,queue_num)
-	agent_list = [t1,t2,t3,t4]
-	'''specify external arrival rates'''
-	t1.set_ext_arr_rate([10,0,0,10])
-	t2.set_ext_arr_rate([10,10,0,0])
-	t3.set_ext_arr_rate([0,10,10,0])
-	t4.set_ext_arr_rate([0,0,10,10])
-	'''specify connection'''
-	n = len(agent_list)
-	adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
-	adjacent_matrix[0][1] = [[0,3,2],3]
-	adjacent_matrix[0][3] = [[1,0,3],0]
-	adjacent_matrix[3][2] = [[0,3,2],3]
-	adjacent_matrix[3][0] = [[1,2,3],2]
-	adjacent_matrix[1][2] = [[1,0,3],0]
-	adjacent_matrix[1][0] = [[0,1,2],1]
-	adjacent_matrix[2][1] = [[1,2,3],2]
-	adjacent_matrix[2][3] = [[0,1,2],1]
-	'''construct network'''
-	network = TrafficNetwork(agent_list, adjacent_matrix)
+# def main():
+# 	'''create agents'''
+# 	queue_num = 4
+# 	t1 = TrafficAgentModel(0,queue_num)
+# 	t2 = TrafficAgentModel(1,queue_num)
+# 	t3 = TrafficAgentModel(2,queue_num)
+# 	t4 = TrafficAgentModel(3,queue_num)
+# 	agent_list = [t1,t2,t3,t4]
+# 	'''specify external arrival rates'''
+# 	t1.set_ext_arr_rate([10,0,0,10])
+# 	t2.set_ext_arr_rate([10,10,0,0])
+# 	t3.set_ext_arr_rate([0,10,10,0])
+# 	t4.set_ext_arr_rate([0,0,10,10])
+# 	'''specify connection'''
+# 	n = len(agent_list)
+# 	adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
+# 	adjacent_matrix[0][1] = [[0,3,2],3]
+# 	adjacent_matrix[0][3] = [[1,0,3],0]
+# 	adjacent_matrix[3][2] = [[0,3,2],3]
+# 	adjacent_matrix[3][0] = [[1,2,3],2]
+# 	adjacent_matrix[1][2] = [[1,0,3],0]
+# 	adjacent_matrix[1][0] = [[0,1,2],1]
+# 	adjacent_matrix[2][1] = [[1,2,3],2]
+# 	adjacent_matrix[2][3] = [[0,1,2],1]
+# 	'''construct network'''
+# 	network = TrafficNetwork(agent_list, adjacent_matrix)
 
-	'''for testing'''
-	print adjacent_matrix
-	print network
-	for t in agent_list:
-		print t
-	for q in t1._local_queue:
-		print q
+# 	'''for testing'''
+# 	print adjacent_matrix
+# 	print network
+# 	for t in agent_list:
+# 		print t
+# 	for q in t1._local_queue:
+# 		print q
 	
 
 
