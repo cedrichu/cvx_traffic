@@ -262,6 +262,11 @@ class TrfficQueue(object):
 			ub_consus_down3[(v.get_agent_id(), v.get_queue_id())] = 1
 		self.ub.append(ub_consus_down3)
 
+	def Initialize_variables(self):
+		self._vars , self._dual_vars = Solver.Variable_Initialization(self._upstream_queue , self._downstream_queue)
+		self.init_lb()
+		self.init_ub()	
+
 	def set_upstream(self, queue):
 		self._upstream_queue.append(queue)
 
