@@ -1,7 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 from cvxpy import *
- 
+import Solver 
 
 class TrafficNetwork(object):
 	def __init__(self, agent_list, adjacent_matrix):
@@ -43,6 +43,11 @@ class TrafficAgentModel(object):
 			queue = TrfficQueue(self._agent_id, i)
 			self._local_queue.append(queue)
 
+	def init_queue_solver_vars(self):		
+		for i in range(self._local_queue_num):
+			self.get_local_queue(i).Initialize_variables()
+			print self.get_local_queue(i).ub
+
 	def set_neighbors(self, neighbor, edge):
 		
 		if neighbor not in self._neighbor_agents:
@@ -73,7 +78,7 @@ class TrafficAgentModel(object):
 		eqn = Variable()
 		constraint = []
 
-		for i in range(self._local_queue_num)
+		for i in range(self._local_queue_num):
 			eqn = eqn + self.get_local_queue(i)._vars[4][0]
 		
 		constraint.append(eqn == self._sat_flow_rate)
@@ -82,7 +87,7 @@ class TrafficAgentModel(object):
 	def get_all_constraints(self):
 		constraints = []
 
-		for i in range(self._local_queue_num)
+		for i in range(self._local_queue_num):
 			constraints.append(self.get_local_queue(i).get_constraints())	
 
 		constraints.append(self.get_queue_sum_sat_constraint())	
@@ -91,7 +96,7 @@ class TrafficAgentModel(object):
 	def get_new_objective(self):		
 		obj = Minimize(pos(0))	
 
-		for i in range(self._local_queue_num)
+		for i in range(self._local_queue_num):
 			obj = obj + self.get_local_queue(i).get_objective()
 
 		return obj	
@@ -150,12 +155,12 @@ class TrfficQueue(object):
 	def __init__(self, agent_id, queue_id):
 		self._agent_id = agent_id
 		self._queue_id = queue_id
-
-		self._vars , self._dual_vars = Solver.Variable_Initialization()
-		self._constraints = []
 		self.lb = []
 		self.ub = []
-						
+		self._constraints = []
+		self._vars = []
+		self._dual_vars	= []			
+
 		'''local variables'''
 		self._arr_rate = 0
 		self._eff_arr_rate = 0
@@ -191,55 +196,176 @@ class TrfficQueue(object):
 		self._speed_limit = 20.0
 
 	def init_lb(self):
-		self.lb = [self._epsilon]*2
-		self.lb.append(self._epsilon)
-		self.lb += [self._epsilon]*2
-		self.lb += [self._epsilon]*2
-		self.lb.append(self._epsilon)
 
-		self.lb.append(self._epsilon)
-		self.lb.append(self._epsilon)
-		self.lb.append(self._epsilon)
-		self.lb.append(self._epsilon)
-		self.lb.append(self._epsilon)
+		self.lb.append([])
+		self.lb[0].append(self._epsilon) # 0 - \lambda_i
+		
+		self.lb.append([])
+		self.lb[1].append(self._epsilon) # 1 - \lambda_i^{eff}
+		
+		self.lb.append([])
+		self.lb[2].append(self._epsilon) # 2 - P(N_i = k_i)
+		
+		self.lb.append([])
+		self.lb[3].append(self._epsilon) # 3 - \mu_i^{eff}
+		
+		self.lb.append([])
+		self.lb[4].append(self._epsilon) # 4 - \mu_i
 
-		self.lb.append([self._epsilon]*len(self._downstream_queue))
-		self.lb.append(-self._speed_limit)
-		self.lb.append(self._epsilon)
-		self.lb.append([self._epsilon]*len(self._upstream_queue))
-		self.lb.append(self._epsilon)
-		self.lb.append([self._epsilon]*len(self._upstream_queue))
+		self.lb.append([])
+		self.lb[5].append(self._epsilon) # 5 - \tilde{\mu_i}
 
+		self.lb.append([])
+		self.lb[6].append(self._epsilon) # 6 - \mathcal{P}_i
+
+		self.lb.append([])
+		self.lb[7].append(self._epsilon) # 7 - \rho_i
+
+		self.lb.append([])
+		self.lb[8].append(self._epsilon) # 8 - v_i
+
+		self.lb.append([])
+		self.lb[9].append(self._epsilon) # 9 - d_i
+
+		self.lb.append([])
+		self.lb[10].append(self._epsilon) # 10 - t_i
+
+		self.lb.append([])
+		self.lb[11].append(self._epsilon) # 11 - w_i
+
+		self.lb.append([])
+		self.lb[12].append(self._epsilon) # 12 - f_i
+
+		self.lb.append([])
+		self.lb[13].append(self._epsilon) # 13 - r_i
+
+		self.lb.append(dict())
+		for i in range(len(self._downstream_queue)):
+			agent_id = self._downstream_queue[i]._agent_id
+			queue_id = self._downstream_queue[i]._queue_id
+			self.lb[14][(agent_id, queue_id)] = self._epsilon			#14 - Az_i^j 
+			
+		self.lb.append([])	
+		self.lb[15].append(-self._epsilon)								#15 - Bz_i
+		
+		self.lb.append([])	
+		self.lb[16].append(self._epsilon)								#16 - Cz_i
+		
+		self.lb.append(dict())
+		
+		for i in range(len(self._upstream_queue)):
+			agent_id = self._upstream_queue[i]._agent_id
+			queue_id = self._upstream_queue[i]._queue_id
+			self.lb[17][(agent_id, queue_id)] = self._epsilon			#17 - Dz_i^j
+			
+		self.lb.append([])			
+		self.lb[18].append(self._epsilon)								#18 - EZ_i
+				
+		self.lb.append(dict())
+		
+		for i in range(len(self._upstream_queue)):
+			agent_id = self._upstream_queue[i]._agent_id
+			queue_id = self._upstream_queue[i]._queue_id
+			self.lb[19][(agent_id, queue_id)] = self._epsilon			#19 - Fz_i^j 			
+		
 	def init_ub(self):
-		self.ub = [self._speed_limit]*2
-		self.ub.append(1)
-		self.ub += [self._speed_limit]*2
-		self.ub += [1]*2
-		self.ub.append(self._speed_limit/self._epsilon)
 
-		self.ub.append(1/self._epsilon)
-		self.ub.append(1/self._epsilon)
-		self.ub.append(1/self._epsilon)
-		self.ub.append(self._speed_limit/self._epsilon)
-		self.ub.append(self._speed_limit/self._epsilon)
+		self.ub.append([])
+		self.ub[0].append(self._speed_limit) # 0 - \lambda_i
+		
+		self.ub.append([])
+		self.ub[1].append(self._speed_limit) # 1 - \lambda_i^{eff}
+		
+		self.ub.append([])
+		self.ub[2].append(1) # 2 - P(N_i = k_i)
+		
+		self.ub.append([])
+		self.ub[3].append(self._speed_limit) # 3 - \mu_i^{eff}
+		
+		self.ub.append([])
+		self.ub[4].append(self._speed_limit) # 4 - \mu_i
 
+		self.ub.append([])
+		self.ub[5].append(1) # 5 - \tilde{\mu_i}
 
-		ub_consus_down= []
-		for v in self._downstream_queue:
-			ub_consus_down.append(self._speed_limit*self._turn_prop[(v.get_agent_id(), v.get_queue_id())])
-		self.ub.append(ub_consus_down)
-		self.ub.append(self._speed_limit)
-		self.ub.append(self._speed_limit/self._epsilon)
-		self.ub.append([self._speed_limit/self._epsilon]*len(self._upstream_queue))
-		self.ub.append(1)
-		self.ub.append([1]*len(self._upstream_queue))
+		self.ub.append([])
+		self.ub[6].append(1) # 6 - \mathcal{P}_i
 
+		self.ub.append([])
+		self.ub[7].append(self._speed_limit/self._epsilon) # 7 - \rho_i
 
+		self.ub.append([])
+		self.ub[8].append(1/self._epsilon) # 8 - v_i
 
+		self.ub.append([])
+		self.ub[9].append(1/self._epsilon) # 9 - d_i
 
+		self.ub.append([])
+		self.ub[10].append(1/self._epsilon) # 10 - t_i
 
+		self.ub.append([])
+		self.ub[11].append(self._speed_limit/self._epsilon) # 11 - w_i
 
+		self.ub.append([])
+		self.ub[12].append(self._speed_limit/self._epsilon) # 12 - f_i
 
+		self.ub.append([])
+		self.ub[13].append() # 13 - r_i
+
+		self.ub.append(dict())
+		for i in range(len(self._downstream_queue)):
+			agent_id = self._downstream_queue[i]._agent_id
+			queue_id = self._downstream_queue[i]._queue_id
+			self.ub[14][(agent_id, queue_id)] = self._speed_limit*self._turn_prop[(agent_id, queue_id)]			#14 - Az_i^j 
+			
+		self.ub.append([])	
+		self.ub[15].append()								#15 - Bz_i
+		
+		self.ub.append([])	
+		self.ub[16].append()								#16 - Cz_i
+		
+		self.ub.append(dict())
+		
+		for i in range(len(Up_queue)):
+			agent_id = Up_queue[i]._agent_id
+			queue_id = Up_queue[i]._queue_id
+			self.ub[17][(agent_id, queue_id)] = 			#17 - Dz_i^j
+			
+		self.ub.append([])			
+		self.ub[18].append()								#18 - EZ_i
+				
+		self.ub.append(dict())
+		
+		for i in range(len(Up_queue)):
+			agent_id = Up_queue[i]._agent_id
+			queue_id = Up_queue[i]._queue_id
+			self.ub[19][(agent_id, queue_id)] = 			#19 - Fz_i^j 
+
+		# self.ub = [self._speed_limit]*2
+		# self.ub.append(1)
+		# self.ub += [self._speed_limit]*2
+		# self.ub += [1]*2
+		# self.ub.append(self._speed_limit/self._epsilon)
+
+		# self.ub.append(1/self._epsilon)
+		# self.ub.append(1/self._epsilon)
+		# self.ub.append(1/self._epsilon)
+		# self.ub.append(self._speed_limit/self._epsilon)
+		# self.ub.append(self._speed_limit/self._epsilon)
+		# ub_consus_down= []
+		# for v in self._downstream_queue:
+		# 	ub_consus_down.append(self._speed_limit*self._turn_prop[(v.get_agent_id(), v.get_queue_id())])
+		# self.ub.append(ub_consus_down)
+		# self.ub.append(self._speed_limit)
+		# self.ub.append(self._speed_limit/self._epsilon)
+		# self.ub.append([self._speed_limit/self._epsilon]*len(self._upstream_queue))
+		# self.ub.append(1)
+		# self.ub.append([1]*len(self._upstream_queue))
+
+	def Initialize_variables(self):
+		self._vars , self._dual_vars = Solver.Variable_Initialization(self._upstream_queue , self._downstream_queue)
+		self.init_lb()
+		self.init_ub()	
 
 	def set_upstream(self, queue):
 		self._upstream_queue.append(queue)

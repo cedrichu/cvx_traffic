@@ -5,6 +5,7 @@ import math
 import Constants
 import Solver
 import numpy as np
+import Network
 
 class Traffic_Agent(object):
 	#lb and ub should be a 2D list
@@ -67,7 +68,7 @@ class BB_Tree_Agent(object):
 		ub = dict()
 		dual = dict()
 
-		for i in range(1 , self.iNumAgents):
+		for i in range(0 , self.iNumAgents):
 			lb[i] = comm.recv(source = i, tag = Constants.TREE_START_LB)
 			ub[i] = comm.recv(source = i, tag = Constants.TREE_START_UB)
 			dual[i] = comm.recv(source = i, tag = Constants.TREE_START_DUAL)				
@@ -79,7 +80,7 @@ class BB_Tree_Agent(object):
 
 	def send_agent_node_info(self , node):
 		comm = MPI.COMM_WORLD
-		for i in range(1 , self.iNumAgents):
+		for i in range(0 , self.iNumAgents):
 			data = node.lb[i]
 			comm.send(data , dest = i , tag = Constants.NEW_LOWER_BOUNDS)
 			data = node.ub[i]
@@ -93,7 +94,7 @@ class BB_Tree_Agent(object):
 		primal_sol = dict()
 		dual_sol = dict()
 		comm = MPI.COMM_WORLD
-		for i in range(1 , self.iNumAgents):
+		for i in range(0 , self.iNumAgents):
 			data = comm.recv(source = i , tag = Constants.GET_PRIMAL_SOLUTION)
 			obj = obj + data[0];
 			feasible = feasible * data[1]
@@ -106,7 +107,7 @@ class BB_Tree_Agent(object):
 		
 		max = 0
 
-		for i in range(1 , self.iNumAgents):	
+		for i in range(0 , self.iNumAgents):	
 			for j in range(0 , len(primal_sol[i])):
 				for k in range(0 , len(primal_sol[i][j])):
 					lbval = node.lb[i][j][k]
@@ -151,54 +152,52 @@ if __name__ == '__main__':
 	rank = comm.Get_rank()
 	iNumAgents = 4;
 
-	if (Constants.BB_TREE_ID == rank):
+	if ( Constants.BB_TREE_ID == rank ):
 		tree = BB_Tree_Agent(iNumAgents)
 		node = tree.get_next_node()
-		print node[1].lb[1]
-		print node[1].ub[2]
-		#print node[1].dual[3]
-		tree.begin_optimization()
+		#tree.begin_optimization()
 	else:
-		neigh = [rank]
-		agent = Traffic_Agent(neigh, rank * 10)
-		
-		lb = []
-		lb.append([])
-		lb[0].append(rank)
-		lb[0].append(rank)
-		lb[0].append(rank)
-		lb.append([])
-		lb[1].append(2 * rank)
-		lb[1].append(2 * rank)
-		lb[1].append(2 * rank)
+		queue_num = 4
+		t1 = Network.TrafficAgentModel(0,queue_num)
+		t2 = Network.TrafficAgentModel(1,queue_num)
+		t3 = Network.TrafficAgentModel(2,queue_num)
+		t4 = Network.TrafficAgentModel(3,queue_num)
+		agent_list = [t1,t2,t3,t4]
+		'''specify external arrival rates'''
+		t1.set_ext_arr_rate([10,0,0,10])
+		t2.set_ext_arr_rate([10,10,0,0])
+		t3.set_ext_arr_rate([0,10,10,0])
+		t4.set_ext_arr_rate([0,0,10,10])
+		'''specify connection'''
+		n = len(agent_list)
+		adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
+		adjacent_matrix[0][1] = [[0,3,2],3]
+		adjacent_matrix[0][3] = [[1,0,3],0]
+		adjacent_matrix[3][2] = [[0,3,2],3]
+		adjacent_matrix[3][0] = [[1,2,3],2]
+		adjacent_matrix[1][2] = [[1,0,3],0]
+		adjacent_matrix[1][0] = [[0,1,2],1]
+		adjacent_matrix[2][1] = [[1,2,3],2]
+		adjacent_matrix[2][3] = [[0,1,2],1]
+		'''construct network'''
+		network = Network.TrafficNetwork(agent_list, adjacent_matrix)
 
-		ub = []
-		ub.append([])
-		ub[0].append(10*rank)
-		ub[0].append(10*rank)
-		ub[0].append(10*rank)
-		ub.append([])
-		ub[1].append(10*rank)
-		ub[1].append(10*rank)
-		ub[1].append(10*rank)
+		t = 0
 
-		dual = []
-		dual.append([])
-		dual[0].append(100 * rank)
+		if(0 ==  rank):
+			t = t1
+		elif(1 == rank):
+			t = t2
+		elif(2 == rank):
+			t = t3
+		else:		
+			t = t4
 
-		agent.set_new_data(lb, ub, dual)
-		
-		#agent.parse_file(%FileName)
+		t.init_queue_solver_vars()	
+		print t.lb
 
-		agent.construct_prob()
-		agent.solve_problems()
-
-		#comm.send([1, MPI.INT], dest = Constants.BB_TREE_ID , tag = Constants.READY_START)
-
+		#t.solve_problems()
 	
-	
-
-
 
 
 

@@ -110,7 +110,7 @@ def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub , queue_cap
 	constraints.append(eqn7)
 
 def Create_eqn_1(Vars , lb, ub):
-	return Construct_McCormick( Vars[0][0] , Vars[0][8] , Vars[1][0], lb[0][0], ub[0][0] , lb[0][8] , ub[0][8] )
+	return Construct_McCormick( Vars[0][0] , Vars[8][0] , Vars[1][0], lb[0][0], ub[0][0] , lb[8][0] , ub[8][0] )
 
 def Create_eqn_3(Vars , lb, ub):
 	eqns = []
