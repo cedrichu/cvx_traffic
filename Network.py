@@ -251,6 +251,8 @@ class TrafficQueue(object):
 		for v in self._upstream_queue:
 			lb_consus_down3[(v.get_agent_id(), v.get_queue_id())] = self._epsilon 
 		self.lb.append(lb_consus_down3) #F
+		self.lb.append(1.0) #d_i\mu_i^eff
+		self.lb.append(1.0) #w_i\mu_i
 
 	def init_ub(self):
 		self.ub.append([self._speed_limit])#lambda
@@ -288,7 +290,8 @@ class TrafficQueue(object):
 		for v in self._upstream_queue:
 			ub_consus_down3[(v.get_agent_id(), v.get_queue_id())] = self._turn_prop_up[(v.get_agent_id(), v.get_queue_id())]
 		self.ub.append(ub_consus_down3) #F
-
+		self.lb.append(1.0) #d_i\mu_i^eff
+		self.lb.append(1.0) #w_i\mu_i
 
 	def Initialize_variables(self):
 		self._vars , self._dual_vars = Solver.Variable_Initialization(self._upstream_queue , self._downstream_queue)

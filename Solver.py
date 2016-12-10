@@ -89,6 +89,12 @@ def Variable_Initialization(Up_queue, Down_queue):
 	Dual['4'] = 0
 	Dual['5'] = 0	
 
+	Vars.append([])
+	Vars[20].append(Variable(1))					#20 - d_i\mu_i^eff
+
+	Vars.append([])
+	Vars[21].append(Variable(1))					#21 - w_i\mu_i
+
 	return Vars , Dual
 
 def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub , queue_cap):
@@ -119,6 +125,15 @@ def create_lower_upper_bound_constraints(Vars , lb , ub):
 	for i in range(0 , 14):
 		eqns.append( Vars[i][0] >= lb[i][0] )
 		eqns.append( Vars[i][0] <= ub[i][0] )
+
+	#d_i\mu_i^eff bounds
+	eqns.append( Vars[20][0] >= lb[20][0] )
+	eqns.append( Vars[20][0] <= ub[20][0] )		
+
+	#w_i\mu_i bounds
+	eqns.append( Vars[21][0] >= lb[21][0] )
+	eqns.append( Vars[21][0] <= ub[21][0] )	
+	
 	return eqns	
 
 def Create_eqn_1(Vars , lb, ub):
@@ -128,8 +143,8 @@ def Create_eqn_3(Vars , lb, ub):
 	eqns = []
 
 	eqns.append( Vars[11][0] + Vars[10][0] ==  Vars[9][0] )     #eqn above 9
-	eqns += Construct_Fractional_Envelope( Vars[9][0] , Vars[3][0] , lb[9][0] , ub[9][0] , lb[3][0] , ub[3][0] )        #eqn 9
-	eqns += Construct_Fractional_Envelope( Vars[11][0] , Vars[4][0] , lb[11][0] , ub[11][0] , lb[4][0] , ub[4][0] ) 	  #eqn10	
+	eqns += Construct_McCormick( Vars[9][0] , Vars[3][0] , Vars[20][0] , lb[9][0] , ub[9][0] , lb[3][0] , ub[3][0] )        #eqn 9
+	eqns += Construct_McCormick( Vars[11][0] , Vars[4][0] , Vars[21][0] , lb[11][0] , ub[11][0] , lb[4][0] , ub[4][0] ) 	  #eqn10	
 	eqns += Construct_McCormick( Vars[5][0] , Vars[10][0] , Vars[6][0] , lb[5][0] , ub[5][0] , lb[10][0] , ub[10][0] )   #eqn 11
 
 	return eqns
