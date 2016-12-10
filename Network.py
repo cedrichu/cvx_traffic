@@ -274,7 +274,7 @@ class TrfficQueue(object):
 		self.ub.append([1]*len(self._upstream_queue))
 		ub_consus_down3= {}
 		for v in self._upstream_queue:
-			ub_consus_down3[(v.get_agent_id(), v.get_queue_id())] = 1
+			ub_consus_down3[(v.get_agent_id(), v.get_queue_id())] = self._turn_prop_up[(v.get_agent_id(), v.get_queue_id())]
 		self.ub.append(ub_consus_down3) #F
 
 
