@@ -46,7 +46,7 @@ class TrafficAgentModel(object):
 
 	def init_local_queue(self):
 		for i in range(self._local_queue_num):
-			queue = TrfficQueue(self._agent_id, i)
+			queue = TrafficQueue(self._agent_id, i)
 			self._local_queue.append(queue)
 
 	def init_queue_solver_vars(self):		
@@ -161,7 +161,7 @@ class TrafficAgentModel(object):
 			self.Update_consensus_vars()
 			self.Update_Dual_Vars()	 		
 	
-class TrfficQueue(object):
+class TrafficQueue(object):
 	def __init__(self, agent_id, queue_id):
 		self._agent_id = agent_id
 		self._queue_id = queue_id
@@ -309,10 +309,10 @@ class TrfficQueue(object):
 	def get_queue_id(self):
 		return self._queue_id
 
-	def get_turning_prop(self, agent_id, queue_id):
+	def get_turn_prop(self, agent_id, queue_id):
 		return self._turn_prop[(agent_id, queue_id)]
 
-	def get_turning_prop_up(self, agent_id, queue_id):
+	def get_turn_prop_up(self, agent_id, queue_id):
 		return self._turn_prop_up[(agent_id, queue_id)]
 
 	def __repr__(self):
