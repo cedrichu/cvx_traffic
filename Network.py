@@ -97,9 +97,9 @@ class TrafficAgentModel(object):
 		constraints = []
 
 		for i in range(self._local_queue_num):
-			constraints.append(self.get_local_queue(i).get_constraints())	
+			constraints += self.get_local_queue(i).get_constraints()	
 
-		constraints.append(self.get_queue_sum_sat_constraint())	
+		constraints += self.get_queue_sum_sat_constraint()	
 		return constraints	
 
 	def get_new_objective(self):		
