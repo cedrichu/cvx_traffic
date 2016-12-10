@@ -191,71 +191,75 @@ class TrfficQueue(object):
 		self._speed_limit = 20.0
 
 	def init_lb(self):
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
-
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
-		self.lb.append([self._epsilon])
+		self.lb.append([self._epsilon]) #lambda
+		self.lb.append([self._epsilon]) #lambda^eff
+		self.lb.append([self._epsilon]) #P(N = k)
+		self.lb.append([self._epsilon]) #mu_eff
+		self.lb.append([self._epsilon]) #mu
+		self.lb.append([self._epsilon]) #mu^tilde
+		self.lb.append([self._epsilon]) #P
+		self.lb.append([self._epsilon]) #rho
+		self.lb.append([self._epsilon]) #v
+		
+		self.lb.append([self._epsilon]) #d
+		self.lb.append([self._epsilon]) #t
+		self.lb.append([self._epsilon]) #w
+		self.lb.append([self._epsilon]) #f
+		self.lb.append([self._epsilon]) #omega
 
 
 		lb_consus_down1= {}
 		for v in self._downstream_queue:
 			lb_consus_down1[(v.get_agent_id(), v.get_queue_id())] = self._epsilon 
-		self.lb.append(lb_consus_down1)
-		self.lb.append([-self._speed_limit])
-		self.lb.append([self._epsilon])
+		self.lb.append(lb_consus_down1) #A
+		self.lb.append([-self._speed_limit]) #B
+		self.lb.append([self._epsilon]) #C
 		lb_consus_down2= {}
 		for v in self._uptream_queue:
 			lb_consus_down2[(v.get_agent_id(), v.get_queue_id())] = self._epsilon 
-		self.lb.append(lb_consus_down2)
-		self.lb.append([self._epsilon])
+		self.lb.append(lb_consus_down2) #D
+		self.lb.append([self._epsilon]) #E
 		lb_consus_down3= {}
 		for v in self._uptream_queue:
 			lb_consus_down3[(v.get_agent_id(), v.get_queue_id())] = self._epsilon 
-		self.lb.append(lb_consus_down3)
+		self.lb.append(lb_consus_down3) #F
 
 	def init_ub(self):
-		self.ub.append([self._speed_limit])
-		self.ub.append([self._speed_limit])
-		self.ub.append([1])
-		self.ub.append([self._speed_limit])
-		self.ub.append([self._speed_limit])
-		self.ub.append([1])
-		self.ub.append([1])
-		self.ub.append([self._speed_limit/self._epsilon])
+		self.ub.append([self._speed_limit])#lambda
+		self.ub.append([self._speed_limit])#lambda^eff
+		self.ub.append([1])#P(N = k)
+		self.ub.append([self._speed_limit])#mu_eff
+		self.ub.append([self._speed_limit])#mu
+		self.ub.append([1])#mu^tilde
+		self.ub.append([1])#P
+		self.ub.append([self._speed_limit/self._epsilon])#rho
+		self.ub.append([1])#v
 
-		self.ub.append([1/self._epsilon])
-		self.ub.append([1/self._epsilon])
-		self.ub.append([1/self._epsilon])
-		self.ub.append([self._speed_limit/self._epsilon])
-		self.ub.append([self._speed_limit/self._epsilon])
+
+
+		self.ub.append([1/self._epsilon])#d
+		self.ub.append([1/self._epsilon])#t
+		self.ub.append([1/self._epsilon])#w
+		self.ub.append([self._speed_limit/self._epsilon])#f
+		self.ub.append([self._speed_limit/self._epsilon])#omega
 
 
 		ub_consus_down1= {}
 		for v in self._downstream_queue:
 			ub_consus_down1[(v.get_agent_id(), v.get_queue_id())] = self._speed_limit*self._turn_prop[(v.get_agent_id(), v.get_queue_id())]
-		self.ub.append(ub_consus_down1)
-		self.ub.append([self._speed_limit])
-		self.ub.append([self._speed_limit/self._epsilon])
+		self.ub.append(ub_consus_down1) #A
+		self.ub.append([self._speed_limit]) #B
+		self.ub.append([self._speed_limit/self._epsilon]) #C
 		ub_consus_down2= {}
 		for v in self._upstream_queue:
 			ub_consus_down2[(v.get_agent_id(), v.get_queue_id())] = self._speed_limit/self._epsilon
-		self.ub.append(ub_consus_down2)
-		self.ub.append([1])
+		self.ub.append(ub_consus_down2) #D
+		self.ub.append([1]) #E
 		self.ub.append([1]*len(self._upstream_queue))
 		ub_consus_down3= {}
 		for v in self._upstream_queue:
 			ub_consus_down3[(v.get_agent_id(), v.get_queue_id())] = 1
-		self.ub.append(ub_consus_down3)
+		self.ub.append(ub_consus_down3) #F
 
 
 
