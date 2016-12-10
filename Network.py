@@ -103,12 +103,12 @@ class TrafficAgentModel(object):
 		return constraints	
 
 	def get_new_objective(self):		
-		obj = Minimize(pos(0))	
-
+		obj = 0
+		
 		for i in range(self._local_queue_num):
 			obj = obj + self.get_local_queue(i).get_objective()
-
-		print 'Entered here'	
+			print 'Entered here'	
+		
 		return obj	
 
 	
