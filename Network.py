@@ -106,8 +106,7 @@ class TrafficAgentModel(object):
 		obj = 0
 		
 		for i in range(self._local_queue_num):
-			obj = obj + self.get_local_queue(i).get_objective()
-			print 'Entered here'	
+			obj = obj + self.get_local_queue(i).get_objective()			
 		
 		return obj	
 
@@ -153,8 +152,13 @@ class TrafficAgentModel(object):
 
 	def solve_problems(self):	 	
 	 	constraints =  self.get_all_constraints()	 	
+	 	
+	 	comm = MPI.COMM_WORLD
+		rank = comm.Get_rank()
+	 	
 	 	while(1):	
 	 		obj = self.get_new_objective()
+
 	 		prob = Problem(Minimize(obj), constraints)
 			prob.solve()
 

@@ -111,6 +111,7 @@ def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub , queue_cap
 
 	eqn7 = Create_eqn_7(Vars, lb, ub)
 	constraints.append(eqn7)
+	return constraints
 
 def create_lower_upper_bound_constraints(Vars , lb , ub):
 	eqns = []
