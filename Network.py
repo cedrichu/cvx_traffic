@@ -98,13 +98,6 @@ class TrafficAgentModel(object):
 		for i in range(self._local_queue_num):
 			constraints += self.get_local_queue(i).get_constraints()	
 
-		comm = MPI.COMM_WORLD
-		rank = comm.Get_rank()	
-
-		if(1 == rank):
-			for i in range(len(constraints)):
-				print constraints[i]
-
 		constraints += self.get_queue_sum_sat_constraint()	
 		return constraints	
 
@@ -162,16 +155,15 @@ class TrafficAgentModel(object):
 	 	comm = MPI.COMM_WORLD
 		rank = comm.Get_rank()
 	 	
-	 	while(1):	
-	 		obj = self.get_new_objective()
+	 	iter = 0
 
-	 		prob = Problem(Minimize(obj), constraints)
-			prob.solve(verbose=True)
-
-
-
+	 	while(iter < 50):	
+	 		obj = self.get_new_objective()	
+			prob = Problem(Minimize(obj), constraints)
+			prob.solve()
 			self.Update_consensus_vars()
-			self.Update_Dual_Vars()	 		
+			self.Update_Dual_Vars()	 	
+			iter = iter + 1
 	
 class TrafficQueue(object):
 	def __init__(self, agent_id, queue_id):
@@ -352,7 +344,7 @@ class TrafficQueue(object):
 		return Solver.receive_rel_vars(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id )
 
 	def solve_send_vars(self , neigh_data):
-		return Solver.solve_coupling_eqns_send_sols(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id , neigh_data , self._ext_arr_rate)
+		return Solver.solve_coupling_eqns_send_sols(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id , neigh_data , self._ext_arr_rate , self.lb , self.ub)
 
 	def recv_update_solved_vars(self):
 		return Solver.recv_update_solved_vars(self._vars , self._agent_id , self._queue_id , self._upstream_queue , self._downstream_queue)
