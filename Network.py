@@ -283,7 +283,6 @@ class TrafficQueue(object):
 			ub_consus_down2[(v.get_agent_id(), v.get_queue_id())] = self._speed_limit/self._epsilon
 		self.ub.append(ub_consus_down2) #D
 		self.ub.append([1]) #E
-		self.ub.append([1]*len(self._upstream_queue))
 		ub_consus_down3= {}
 		for v in self._upstream_queue:
 			ub_consus_down3[(v.get_agent_id(), v.get_queue_id())] = self._turn_prop_up[(v.get_agent_id(), v.get_queue_id())]
