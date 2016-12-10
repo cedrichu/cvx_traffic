@@ -226,7 +226,7 @@ class TrafficQueue(object):
 		self.lb.append([self._epsilon]) #mu
 		self.lb.append([self._epsilon]) #mu^tilde
 		self.lb.append([0]) #P
-		self.lb.append([0]) #rho
+		self.lb.append([self._epsilon]) #rho
 		self.lb.append([0]) #v
 		
 		self.lb.append([0]) #d
