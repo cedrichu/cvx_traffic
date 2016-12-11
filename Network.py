@@ -155,7 +155,6 @@ class TrafficAgentModel(object):
 			self.get_local_queue(i).recv_update_solved_vars()			
 
 	#updates only dual variables corresponding to consensus constraints, 
-	#dual variables w.r.t coupling constraints are updated in previous solve_send_vars() of Update_consensus_vars() 
 	def Update_Dual_Vars(self):
 		for i in range(self._local_queue_num):
 			self.get_local_queue(i).Update_Dual_Vars()
@@ -168,7 +167,7 @@ class TrafficAgentModel(object):
 	 	
 	 	iter = 0
 
-	 	while(iter < 1000):	
+	 	while(iter < 20000):	
 	 		obj = self.get_new_objective()	
 			prob = Problem(Minimize(obj), constraints)
 			prob.solve(warm_start = True)
@@ -177,7 +176,7 @@ class TrafficAgentModel(object):
 			self.Update_Dual_Vars()	 	
 			
 			#print self.get_total_lagrangian()
-			print self.get_primal_objective().value
+			print self.get_primal_objective().value , iter
 
 			iter = iter + 1
 	

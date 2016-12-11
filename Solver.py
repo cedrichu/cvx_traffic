@@ -435,7 +435,7 @@ def solve_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate ,
 	constraints = []
 
 	BZ_Var = Variable(1)
-	var = Vars[1][0] - (arr_rate * Vars[8][0]) - BZ_Var	
+	var = Vars[1][0].value - (arr_rate * Vars[8][0].value) - BZ_Var	
 	obj = ( Duals['B'] * var ) + ( Constants.ADMM_PEN * square(var)/2.0 )
 
 	constraints.append(BZ_Var >= lb[15][0])
@@ -462,8 +462,6 @@ def solve_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate ,
 
 	Vars[15][0] = BZ_Var.value
 	coup_res['2'] = coup_var.value
-	#dual update of coupling constraint 1
-	#Duals['2'] = Duals['2'] + Constants.ADMM_PEN * ( coup_var.value )
 
 def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars , lb , ub , coup_res):
 	for i in range(len(Down_queue)):
@@ -474,7 +472,7 @@ def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 	constraints = []
 		
 	CZ_Var = Variable(1)
-	var = Vars[13][0] - CZ_Var
+	var = Vars[13][0].value - CZ_Var
 	obj = (Duals['C'] * var) + Constants.ADMM_PEN * square(var)/2.0
 
 	constraints.append(CZ_Var >= lb[16][0])
@@ -501,8 +499,6 @@ def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 
 	Vars[16][0] = CZ_Var.value
 	coup_res['4'] = coup_var.value
-	#dual update of coupling constraint 4
-	#Duals['4'] = Duals['4'] + Constants.ADMM_PEN * ( coup_var.value )	
 
 def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars, lb , ub , coup_res ):
 	for i in range(len(Down_queue)):
@@ -513,7 +509,7 @@ def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 	constraints = []	
 
 	EZ_Var = Variable(1)
-	var = Vars[6][0] - EZ_Var
+	var = Vars[6][0].value - EZ_Var
 	obj = (Duals['E'] * var) + Constants.ADMM_PEN * square(var)/2.0
 
 	constraints.append(EZ_Var >= lb[18][0])
@@ -540,8 +536,6 @@ def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 
 	Vars[18][0] = EZ_Var.value
 	coup_res['5'] = coup_var.value	
-	#dual update of coupling constraint 5
-	#Duals['5'] = Duals['5'] + Constants.ADMM_PEN * ( coup_var.value )	
 
 def send_solved_eqn(Conses_neigh_vars , Queue , My_queue_id , eqn_type):
 	comm = MPI.COMM_WORLD
