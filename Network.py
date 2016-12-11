@@ -174,10 +174,10 @@ class TrafficAgentModel(object):
 			#print prob.value
 			self.Update_consensus_vars()
 			
-			#print self.compute_residuals() , iter
+			print self.compute_residuals() , iter
 			self.Update_Dual_Vars()	 	
 			
-			print self.get_primal_objective().value , iter
+			#print self.get_primal_objective().value , iter
 
 			iter = iter + 1
 	
