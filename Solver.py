@@ -2,6 +2,7 @@ from cvxpy import *
 import numpy as np
 import Constants
 from mpi4py import MPI
+import math
 
 def Variable_Initialization(Up_queue, Down_queue):
 	Vars = []
@@ -54,15 +55,18 @@ def Variable_Initialization(Up_queue, Down_queue):
 	for i in range(len(Down_queue)):
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
-		Vars[14][(agent_id, queue_id)] = 0			#14 - Az_i^j 
+		Vars[14][(agent_id, queue_id)] = Variable(1)	#14 - Az_i^j 
+		Vars[14][(agent_id, queue_id)].value = 0
 		Dual['A'][(agent_id, queue_id)] = 0 
 
 	Vars.append([])	
-	Vars[15].append(0)								#15 - Bz_i
+	Vars[15] = Variable(1)
+	Vars[15].value = 0									#15 - Bz_i
 	Dual['B'] = 0 
 
 	Vars.append([])	
-	Vars[16].append(0)								#16 - Cz_i
+	Vars[16]= Variable(1)								#16 - Cz_i
+	Vars[16].value = 0
 	Dual['C'] = 0
 
 	Vars.append(dict())
@@ -70,11 +74,13 @@ def Variable_Initialization(Up_queue, Down_queue):
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
-		Vars[17][(agent_id, queue_id)] = 0			#17 - Dz_i^j
+		Vars[17][(agent_id, queue_id)] = Variable(1)			#17 - Dz_i^j
+		Vars[17][(agent_id, queue_id)].value = 0
 		Dual['D'][(agent_id, queue_id)] = 0
 
 	Vars.append([])			
-	Vars[18].append(0)								#18 - EZ_i
+	Vars[18]= Variable(1)									#18 - EZ_i
+	Vars[18].value = 0
 	Dual['E'] = 0
 	
 	Vars.append(dict())
@@ -82,7 +88,8 @@ def Variable_Initialization(Up_queue, Down_queue):
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
-		Vars[19][(agent_id, queue_id)] = 0			#19 - Fz_i^j 
+		Vars[19][(agent_id, queue_id)] = Variable(1)			#19 - Fz_i^j 
+		Vars[19][(agent_id, queue_id)].value = 0
 		Dual['F'][(agent_id, queue_id)] = 0
 	 
 	Dual['2'] = 0
@@ -100,7 +107,7 @@ def Variable_Initialization(Up_queue, Down_queue):
 def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub , queue_cap):
 	constraints = []
 	
-	eqn_bounds = create_lower_upper_bound_constraints(Vars , lb , ub)
+	eqn_bounds = create_lower_upper_bound_constraints(Vars , lb , ub , Down_queue , Up_queue)
 	constraints += eqn_bounds
 
 	eqn1 = Create_eqn_1(Vars, lb, ub)
@@ -120,11 +127,41 @@ def Create_constraints_for_queue(Vars, Up_queue, Down_queue , lb, ub , queue_cap
 
 	return constraints
 
-def create_lower_upper_bound_constraints(Vars , lb , ub):
+def create_lower_upper_bound_constraints(Vars , lb , ub , Down_queue , Up_queue):
 	eqns = []
 	for i in range(0 , 14):
 		eqns.append( Vars[i][0] >= lb[i][0] )
 		eqns.append( Vars[i][0] <= ub[i][0] )
+
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		eqns.append( Vars[14][(agent_id, queue_id)] >= lb[14][(agent_id, queue_id)])	#14 - Az_i^j 
+		eqns.append( Vars[14][(agent_id, queue_id)] <= lb[14][(agent_id, queue_id)])	#14 - Az_i^j 
+		
+
+	eqns.append( Vars[15][0] >= lb[15][0] )
+	eqns.append( Vars[15][0] <= ub[15][0] )	
+
+	eqns.append( Vars[16][0] >= lb[16][0] )
+	eqns.append( Vars[16][0] <= ub[16][0] )	
+
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		eqns.append(Vars[17][(agent_id, queue_id)] >= lb[17][(agent_id, queue_id)])			#17 - Dz_i^j
+		eqns.append(Vars[17][(agent_id, queue_id)] <= ub[17][(agent_id, queue_id)])
+		
+
+	eqns.append( Vars[18][0] >= lb[18][0] )
+	eqns.append( Vars[18][0] <= ub[18][0] )	
+
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		eqns.append(Vars[19][(agent_id, queue_id)] >= lb[19][(agent_id, queue_id)])			#19 - Fz_i^j 
+		eqns.append(Vars[19][(agent_id, queue_id)] <= ub[19][(agent_id, queue_id)])	
+		
 
 	#d_i\mu_i^eff bounds
 	eqns.append( Vars[20][0] >= lb[20][0] )
@@ -223,18 +260,18 @@ def Get_dual_objective_eqn_A(Vars , Duals , Down_queue , turn_prop):
 	for i in range(len(Down_queue)):
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
-		eqn = (turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
+		eqn = (turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)].value
 		obj = obj + Duals['A'][(agent_id, queue_id)] * eqn 
 		obj = obj + Constants.ADMM_PEN * square( eqn )/2.0
 	return obj	
 
 def Get_dual_objective_eqn_B(Vars , Duals , arr_rate):	
-	eqn = Vars[1][0] - (arr_rate * Vars[8][0]) - Vars[15][0]	
+	eqn = Vars[1][0] - (arr_rate * Vars[8][0]) - Vars[15][0].value	
 	obj = ( Duals['B'] * eqn ) + Constants.ADMM_PEN * square(eqn)/2.0 
 	return obj
 
 def Get_dual_objective_eqn_C(Vars, Duals):
-	eqn = Vars[13][0] - Vars[16][0]
+	eqn = Vars[13][0] - Vars[16][0].value
 	obj = ( Duals['C'] * eqn ) + Constants.ADMM_PEN * square(eqn)/2.0
 	return obj	
 
@@ -243,13 +280,13 @@ def Get_dual_objective_eqn_D(Vars, Duals , Up_queue):
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
-		eqn = Vars[12][0] - Vars[17][(agent_id , queue_id)]
+		eqn = Vars[12][0] - Vars[17][(agent_id , queue_id)].value
 		obj = obj + Duals['D'][(agent_id, queue_id)] * eqn
 		obj = obj + Constants.ADMM_PEN * square(eqn)/2.0 
 	return obj		
 
 def Get_dual_objective_eqn_E(Vars, Duals):	
-	eqn = Vars[6][0] - Vars[18][0]
+	eqn = Vars[6][0] - Vars[18][0].value
 	obj = (Duals['E'] * eqn) + Constants.ADMM_PEN * square(eqn)/2.0 
 	return obj
 
@@ -258,7 +295,7 @@ def Get_dual_objective_eqn_F(Vars, Duals, turn_prop , Up_queue):
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
-		eqn = Vars[19][(agent_id , queue_id)] - (turn_prop[(agent_id , queue_id)] * Vars[2][0])	
+		eqn = Vars[19][(agent_id , queue_id)].value - (turn_prop[(agent_id , queue_id)] * Vars[2][0])	
 		obj = obj + Duals['F'][(agent_id , queue_id)] * eqn
 		obj = obj + Constants.ADMM_PEN * square(eqn)/2.0 
 	return obj
@@ -434,7 +471,7 @@ def solve_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate ,
 
 	constraints = []
 
-	BZ_Var = Variable(1)
+	BZ_Var = Vars[15][0]
 	var = Vars[1][0].value - (arr_rate * Vars[8][0].value) - BZ_Var	
 	obj = ( Duals['B'] * var ) + ( Constants.ADMM_PEN * square(var)/2.0 )
 
@@ -458,9 +495,8 @@ def solve_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate ,
 
 	obj = obj + ( Duals['2'] * coup_var ) + Constants.ADMM_PEN * square(coup_var)/2.0
 	prob = Problem(Minimize(obj), constraints)
-	prob.solve()
+	prob.solve(solver=ECOS , max_iters = 2000 , abstol = 10 ** -11)
 
-	Vars[15][0] = BZ_Var.value
 	coup_res['2'] = coup_var.value
 
 def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars , lb , ub , coup_res):
@@ -471,7 +507,7 @@ def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 
 	constraints = []
 		
-	CZ_Var = Variable(1)
+	CZ_Var = Vars[16][0]
 	var = Vars[13][0].value - CZ_Var
 	obj = (Duals['C'] * var) + Constants.ADMM_PEN * square(var)/2.0
 
@@ -495,9 +531,8 @@ def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 
 	obj = obj + (Duals['4'] * coup_var) + Constants.ADMM_PEN * square(coup_var)/2.0
 	prob = Problem(Minimize(obj), constraints)
-	prob.solve()
+	prob.solve(solver=ECOS , max_iters = 2000 , abstol = 10 ** -11)
 
-	Vars[16][0] = CZ_Var.value
 	coup_res['4'] = coup_var.value
 
 def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars, lb , ub , coup_res ):
@@ -508,7 +543,7 @@ def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 
 	constraints = []	
 
-	EZ_Var = Variable(1)
+	EZ_Var = Vars[18][0]
 	var = Vars[6][0].value - EZ_Var
 	obj = (Duals['E'] * var) + Constants.ADMM_PEN * square(var)/2.0
 
@@ -532,9 +567,8 @@ def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 
 	obj = obj + (Duals['5'] * coup_var) + Constants.ADMM_PEN * square(coup_var)/2.0
 	prob = Problem(Minimize(obj), constraints)
-	prob.solve()
+	prob.solve(solver=ECOS , max_iters = 2000 , abstol = 10 ** -11)
 
-	Vars[18][0] = EZ_Var.value
 	coup_res['5'] = coup_var.value	
 
 def send_solved_eqn(Conses_neigh_vars , Queue , My_queue_id , eqn_type):
@@ -561,13 +595,43 @@ def recv_updated_solved_vars(Vars , My_agent_id , My_queue_id , eqn_type , Queue
 		#TAG = str(My_agent_id)+'_'+str(My_queue_id)+'_'+str(queue_id)+str(eqn_type)
 		TAG = (1000 * My_agent_id) + (100 * My_queue_id)+ ( 10 * queue_id ) + eqn_type
 		data = comm.recv(source = agent_id , tag = TAG)
-		Vars[var_index][(agent_id, queue_id)] = data
+		Vars[var_index][(agent_id, queue_id)].value = data
 
-def compute_lagrangian(Vars, Duals , Up_queue , Down_queue , arr_rate, turn_prop , up_turn_prop , coup_res):
-	obj = Get_total_queue_objective(Vars, Duals, Up_queue, Down_queue , arr_rate , turn_prop , up_turn_prop)
+def compute_residuals(Vars, Duals , Up_queue , Down_queue , arr_rate, turn_prop , up_turn_prop , coup_res):
+	res = 0
+	#A
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		eqn = (turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
+		res = res + ( eqn.value * eqn.value )
+	
+	#B
+	eqn = Vars[1][0] - (arr_rate * Vars[8][0]) - Vars[15][0]
+	res = res + ( eqn.value * eqn.value )
 
-	obj = obj + (Duals['2'] * coup_res['2']) + Constants.ADMM_PEN * (coup_res['2'] * coup_res['2'])/2.0
-	obj = obj + (Duals['4'] * coup_res['4']) + Constants.ADMM_PEN * (coup_res['4'] * coup_res['4'])/2.0
-	obj = obj + (Duals['5'] * coup_res['5']) + Constants.ADMM_PEN * (coup_res['5'] * coup_res['5'])/2.0
+	#C
+	eqn = Vars[13][0] - Vars[16][0]
+	res = res + ( eqn.value * eqn.value )			
 
-	return obj.value
+	#D
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		eqn = Vars[12][0] - Vars[17][(agent_id , queue_id)]
+		res = res + ( eqn.value * eqn.value )			 
+
+	#E	
+	eqn = Vars[6][0] - Vars[18][0]
+	res = res + ( eqn.value * eqn.value )			
+
+	#F
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		eqn = Vars[19][(agent_id , queue_id)] - (up_turn_prop[(agent_id , queue_id)] * Vars[2][0])	
+		res = res + ( eqn.value * eqn.value )			
+
+	res = res + (coup_res['2'] * coup_res['2'])	+ (coup_res['4'] * coup_res['4']) + (coup_res['5'] * coup_res['5'])
+
+	return math.sqrt(res)
