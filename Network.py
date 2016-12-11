@@ -54,14 +54,15 @@ class TrafficAgentModel(object):
 		for i in range(self._local_queue_num):
 			self.get_local_queue(i).Initialize_variables()			
 
+
 	def set_neighbors(self, neighbor, edge):
 		
 		if neighbor not in self._neighbor_agents:
 			self._neighbor_agents.append(neighbor)
 
 		for q in edge[0]:
-			self._local_queue[edge[1]].set_upstream(neighbor.get_local_queue(q))
-			neighbor.get_local_queue(q).set_downstream(self._local_queue[edge[1]])
+			self._local_queue[q].set_downstream(neighbor.get_local_queue(edge[1]))
+			neighbor.get_local_queue(edge[1]).set_upstream(self._local_queue[q])
 
 	def set_ext_arr_rate(self, rate):
 		for idx,q  in enumerate(self._local_queue):
