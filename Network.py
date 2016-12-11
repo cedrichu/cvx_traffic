@@ -116,10 +116,10 @@ class TrafficAgentModel(object):
 			obj = obj + self.get_local_queue(i).get_primal_obj()
 		return obj
 
-	def get_total_lagrangian(self):	
+	def compute_residuals(self):	
 		obj = 0
 		for i in range(self._local_queue_num):
-			obj = obj + self.get_local_queue(i).compute_lagrangian()
+			obj = obj + self.get_local_queue(i).compute_residuals()
 		return obj
 
 	def get_new_data(self):
@@ -156,7 +156,6 @@ class TrafficAgentModel(object):
 			self.get_local_queue(i).recv_update_solved_vars()			
 
 	#updates only dual variables corresponding to consensus constraints, 
-	#dual variables w.r.t coupling constraints are updated in previous solve_send_vars() of Update_consensus_vars() 
 	def Update_Dual_Vars(self):
 		for i in range(self._local_queue_num):
 			self.get_local_queue(i).Update_Dual_Vars()
@@ -169,16 +168,17 @@ class TrafficAgentModel(object):
 	 	
 	 	iter = 0
 
-	 	while(iter < 1000):	
+	 	while(iter < 200):	
 	 		obj = self.get_new_objective()	
 			prob = Problem(Minimize(obj), constraints)
-			prob.solve(warm_start = True)
+			prob.solve(solver=ECOS , warm_start = True , max_iters = 2000 , abstol = 10 ** -11)
 			#print prob.value
 			self.Update_consensus_vars()
+			
+			#print self.compute_residuals() , iter
 			self.Update_Dual_Vars()	 	
 			
-			#print self.get_total_lagrangian()
-			print self.get_primal_objective().value
+			print self.get_primal_objective().value , iter
 
 			iter = iter + 1
 	
@@ -371,8 +371,8 @@ class TrafficQueue(object):
 		obj = inv_pos(1 - self._vars[7][0]) - 1
 		return obj
 
-	def compute_lagrangian(self):
-		return Solver.compute_lagrangian(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop , self._turn_prop_up , self._coup_res)	
+	def compute_residuals(self):
+		return Solver.compute_residuals(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop , self._turn_prop_up , self._coup_res)	
 
 # def main():
 # 	'''create agents'''
