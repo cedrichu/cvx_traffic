@@ -85,7 +85,7 @@ def Variable_Initialization(Up_queue, Down_queue):
 		Vars[19][(agent_id, queue_id)] = 0			#19 - Fz_i^j 
 		Dual['F'][(agent_id, queue_id)] = 0
 	 
-	Dual['1'] = 0
+	Dual['2'] = 0
 	Dual['4'] = 0
 	Dual['5'] = 0	
 
@@ -145,9 +145,9 @@ def Create_eqn_1(Vars , lb, ub):
 def Create_eqn_3(Vars , lb, ub):
 	eqns = []
 
-	eqns.append( Vars[11][0] + Vars[10][0] ==  Vars[9][0] )     #eqn above 9
-	eqns += Construct_McCormick( Vars[9][0] , Vars[3][0] , Vars[20][0] , lb[9][0] , ub[9][0] , lb[3][0] , ub[3][0] )        #eqn 9
-	eqns += Construct_McCormick( Vars[11][0] , Vars[4][0] , Vars[21][0] , lb[11][0] , ub[11][0] , lb[4][0] , ub[4][0] ) 	  #eqn10	
+	eqns.append( Vars[11][0] + Vars[10][0] ==  Vars[9][0] )    															 #eqn above 9
+	eqns += Construct_McCormick( Vars[9][0] , Vars[3][0] , Vars[20][0] , lb[9][0] , ub[9][0] , lb[3][0] , ub[3][0] )     #eqn 9
+	eqns += Construct_McCormick( Vars[11][0] , Vars[4][0] , Vars[21][0] , lb[11][0] , ub[11][0] , lb[4][0] , ub[4][0] )  #eqn10	
 	eqns += Construct_McCormick( Vars[5][0] , Vars[10][0] , Vars[6][0] , lb[5][0] , ub[5][0] , lb[10][0] , ub[10][0] )   #eqn 11
 
 	return eqns
@@ -223,19 +223,19 @@ def Get_dual_objective_eqn_A(Vars , Duals , Down_queue , turn_prop):
 	for i in range(len(Down_queue)):
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
-		var = (turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
-		obj = obj + Duals['A'][(agent_id, queue_id)] * var 
-		obj = obj + Constants.ADMM_PEN * square( var )/2.0
+		eqn = (turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
+		obj = obj + Duals['A'][(agent_id, queue_id)] * eqn 
+		obj = obj + Constants.ADMM_PEN * square( eqn )/2.0
 	return obj	
 
 def Get_dual_objective_eqn_B(Vars , Duals , arr_rate):	
-	var = Vars[1][0] - (arr_rate * Vars[8][0]) - Vars[15][0]	
-	obj = ( Duals['B'] * var ) + Constants.ADMM_PEN * square(var)/2.0 
+	eqn = Vars[1][0] - (arr_rate * Vars[8][0]) - Vars[15][0]	
+	obj = ( Duals['B'] * eqn ) + Constants.ADMM_PEN * square(eqn)/2.0 
 	return obj
 
 def Get_dual_objective_eqn_C(Vars, Duals):
-	var = Vars[13][0] - Vars[16][0]
-	obj = ( Duals['C'] * var ) + Constants.ADMM_PEN * square(var)/2.0
+	eqn = Vars[13][0] - Vars[16][0]
+	obj = ( Duals['C'] * eqn ) + Constants.ADMM_PEN * square(eqn)/2.0
 	return obj	
 
 def Get_dual_objective_eqn_D(Vars, Duals , Up_queue):
@@ -243,14 +243,14 @@ def Get_dual_objective_eqn_D(Vars, Duals , Up_queue):
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
-		var = Vars[12][0] - Vars[17][(agent_id , queue_id)]
-		obj = obj + Duals['D'][(agent_id, queue_id)] * var
-		obj = obj + Constants.ADMM_PEN * square(var)/2.0 
+		eqn = Vars[12][0] - Vars[17][(agent_id , queue_id)]
+		obj = obj + Duals['D'][(agent_id, queue_id)] * eqn
+		obj = obj + Constants.ADMM_PEN * square(eqn)/2.0 
 	return obj		
 
 def Get_dual_objective_eqn_E(Vars, Duals):	
-	var = Vars[6][0] - Vars[18][0]
-	obj = (Duals['E'] * var) + Constants.ADMM_PEN * square(var)/2.0 
+	eqn = Vars[6][0] - Vars[18][0]
+	obj = (Duals['E'] * eqn) + Constants.ADMM_PEN * square(eqn)/2.0 
 	return obj
 
 def Get_dual_objective_eqn_F(Vars, Duals, turn_prop , Up_queue):
@@ -258,15 +258,16 @@ def Get_dual_objective_eqn_F(Vars, Duals, turn_prop , Up_queue):
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
-		var = Vars[19][(agent_id , queue_id)] - (turn_prop[(agent_id , queue_id)] * Vars[2][0])	
-		obj = obj + Duals['F'][(agent_id , queue_id)] * var
-		obj = obj + Constants.ADMM_PEN * square(var)/2.0 
+		eqn = Vars[19][(agent_id , queue_id)] - (turn_prop[(agent_id , queue_id)] * Vars[2][0])	
+		obj = obj + Duals['F'][(agent_id , queue_id)] * eqn
+		obj = obj + Constants.ADMM_PEN * square(eqn)/2.0 
 	return obj
 
-def Update_Dual_Vars(Vars , Duals, Up_queue, Down_queue , ext_arr_rate , turn_prop , up_turn_prop):
+def Update_Dual_Vars(Vars , Duals, Up_queue, Down_queue , ext_arr_rate , turn_prop , up_turn_prop , coup_res):
 	Update_Dual_Vars_eqn_2(Vars , Duals, Down_queue , ext_arr_rate , turn_prop)	
 	Update_Dual_Vars_eqn_4(Vars, Duals, Up_queue)
 	Update_Dual_Vars_eqn_5(Vars, Duals, up_turn_prop , Up_queue)
+	Update_Dual_Couplings_eqs(Duals, coup_res)
 
 def Update_Dual_Vars_eqn_2(Vars , Duals, Down_queue , ext_arr_rate , turn_prop):
 	Update_Dual_Vars_eqn_A(Vars , Duals , Down_queue , turn_prop)	
@@ -280,38 +281,43 @@ def Update_Dual_Vars_eqn_5(Vars, Duals, turn_prop , Up_queue):
 	Update_Dual_Vars_eqn_E(Vars, Duals)
 	Update_Dual_Vars_eqn_F(Vars, Duals, turn_prop , Up_queue)
 
+def Update_Dual_Couplings_eqs(Duals, coup_res):
+	Duals['2'] = Duals['2'] + Constants.ADMM_PEN * ( coup_res['2'] )
+	Duals['4'] = Duals['4'] + Constants.ADMM_PEN * ( coup_res['4'] )
+	Duals['5'] = Duals['5'] + Constants.ADMM_PEN * ( coup_res['5'] )	
+
 def Update_Dual_Vars_eqn_A(Vars , Duals , Down_queue , turn_prop):
 	for i in range(len(Down_queue)):
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
-		var = (turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
-		Duals['A'][(agent_id, queue_id)]  = Duals['A'][(agent_id, queue_id)] + ( Constants.ADMM_PEN * var.value )
+		eqn = (turn_prop[(agent_id, queue_id)] * Vars[1][0] ) - Vars[14][(agent_id, queue_id)]
+		Duals['A'][(agent_id, queue_id)]  = Duals['A'][(agent_id, queue_id)] + ( Constants.ADMM_PEN * eqn.value )
 		
 def Update_Dual_Vars_eqn_B(Vars , Duals , arr_rate):	
-	var = Vars[1][0] - (arr_rate * Vars[8][0]) - Vars[15][0]	
-	Duals['B'] = Duals['B'] + ( Constants.ADMM_PEN * var.value ) 
+	eqn = Vars[1][0] - (arr_rate * Vars[8][0]) - Vars[15][0]	
+	Duals['B'] = Duals['B'] + ( Constants.ADMM_PEN * eqn.value ) 
 		
 def Update_Dual_Vars_eqn_C(Vars, Duals):
-	var = Vars[13][0] - Vars[16][0]
-	Duals['C'] = Duals['C'] + ( Constants.ADMM_PEN * var.value ) 
+	eqn = Vars[13][0] - Vars[16][0]
+	Duals['C'] = Duals['C'] + ( Constants.ADMM_PEN * eqn.value ) 
 
 def Update_Dual_Vars_eqn_D(Vars, Duals , Up_queue):
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
-		var = Vars[12][0] - Vars[17][(agent_id , queue_id)]
-		Duals['D'][(agent_id, queue_id)] = Duals['D'][(agent_id, queue_id)] + ( Constants.ADMM_PEN * var.value )
+		eqn = Vars[12][0] - Vars[17][(agent_id , queue_id)]
+		Duals['D'][(agent_id, queue_id)] = Duals['D'][(agent_id, queue_id)] + ( Constants.ADMM_PEN * eqn.value )
 
 def Update_Dual_Vars_eqn_E(Vars, Duals):	
-	var = Vars[6][0] - Vars[18][0]
-	Duals['E'] = Duals['E'] + (Constants.ADMM_PEN * var.value ) 
+	eqn = Vars[6][0] - Vars[18][0]
+	Duals['E'] = Duals['E'] + (Constants.ADMM_PEN * eqn.value ) 
 
 def Update_Dual_Vars_eqn_F(Vars, Duals, turn_prop , Up_queue):
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
-		var = Vars[19][(agent_id , queue_id)] - (turn_prop[(agent_id , queue_id)] * Vars[2][0])	
-		Duals['F'][(agent_id , queue_id)] = Duals['F'][(agent_id , queue_id)] + ( Constants.ADMM_PEN * var.value )	
+		eqn = Vars[19][(agent_id , queue_id)] - (turn_prop[(agent_id , queue_id)] * Vars[2][0])	
+		Duals['F'][(agent_id , queue_id)] = Duals['F'][(agent_id , queue_id)] + ( Constants.ADMM_PEN * eqn.value )	
 	
 def send_rel_vars(Vars , Duals, Up_queue , Down_queue , turn_prop , My_queue_id , lb, ub , up_turn_prop):
 	send_rel_vars_eqn_A( Vars , Duals , Down_queue , turn_prop , My_queue_id , lb , ub )
@@ -400,27 +406,27 @@ def receive_rel_vars_F(Vars , Duals , Down_queue , My_queue_id , neigh_vars_data
 		data = comm.recv(source = agent_id , tag = TAG)	
 		neigh_vars_data['F'][(agent_id , queue_id)] = data		
 
-def solve_coupling_eqns_send_sols(Vars , Duals , Up_queue , Down_queue , My_queue_id , neigh_data , arr_rate , lb, ub ):
-	solve_send_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , lb , ub )
-	solve_send_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , lb , ub )
-	solve_send_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , lb , ub)
+def solve_coupling_eqns_send_sols(Vars , Duals , Up_queue , Down_queue , My_queue_id , neigh_data , arr_rate , lb, ub , coup_res ):
+	solve_send_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , lb , ub , coup_res )
+	solve_send_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , lb , ub , coup_res ) 
+	solve_send_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , lb , ub , coup_res )
 
-def solve_send_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , lb , ub ):
+def solve_send_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , lb , ub , coup_res ):
 	Conses_neigh_vars = dict()
-	solve_eqn_2	( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , Conses_neigh_vars, lb , ub  )
+	solve_eqn_2	( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , Conses_neigh_vars, lb , ub , coup_res )
 	send_solved_eqn(Conses_neigh_vars , Up_queue , My_queue_id , 2)	
 
-def solve_send_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , lb , ub ):
+def solve_send_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , lb , ub , coup_res ):
 	Conses_neigh_vars = dict()
-	solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars, lb , ub  )
+	solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars, lb , ub , coup_res )
 	send_solved_eqn(Conses_neigh_vars , Down_queue , My_queue_id , 4)
 
-def solve_send_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data, lb , ub  ):
+def solve_send_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data, lb , ub , coup_res ):
 	Conses_neigh_vars = dict()
-	solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars, lb , ub  )
+	solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars, lb , ub , coup_res )
 	send_solved_eqn(Conses_neigh_vars , Down_queue , My_queue_id , 5)	
 
-def solve_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , Conses_neigh_vars , lb , ub ):
+def solve_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate , Conses_neigh_vars , lb , ub , coup_res):
 	for i in range(len(Up_queue)):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
@@ -450,15 +456,16 @@ def solve_eqn_2( Vars , Duals , Up_queue , My_queue_id , neigh_data , arr_rate ,
 		obj = obj + agent_obj
 		coup_var = coup_var + var
 
-	obj = obj + ( Duals['1'] * coup_var ) + Constants.ADMM_PEN * square(coup_var)/2.0
+	obj = obj + ( Duals['2'] * coup_var ) + Constants.ADMM_PEN * square(coup_var)/2.0
 	prob = Problem(Minimize(obj), constraints)
 	prob.solve()
 
 	Vars[15][0] = BZ_Var.value
+	coup_res['2'] = coup_var.value
 	#dual update of coupling constraint 1
-	Duals['1'] = Duals['1'] + Constants.ADMM_PEN * ( coup_var.value )
+	#Duals['2'] = Duals['2'] + Constants.ADMM_PEN * ( coup_var.value )
 
-def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars , lb , ub ):
+def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars , lb , ub , coup_res):
 	for i in range(len(Down_queue)):
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
@@ -493,10 +500,11 @@ def solve_eqn_4( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 	prob.solve()
 
 	Vars[16][0] = CZ_Var.value
+	coup_res['4'] = coup_var.value
 	#dual update of coupling constraint 4
-	Duals['4'] = Duals['4'] + Constants.ADMM_PEN * ( coup_var.value )	
+	#Duals['4'] = Duals['4'] + Constants.ADMM_PEN * ( coup_var.value )	
 
-def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars, lb , ub  ):
+def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_neigh_vars, lb , ub , coup_res ):
 	for i in range(len(Down_queue)):
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
@@ -530,9 +538,10 @@ def solve_eqn_5( Vars , Duals , Down_queue , My_queue_id , neigh_data , Conses_n
 	prob = Problem(Minimize(obj), constraints)
 	prob.solve()
 
-	Vars[18][0] = EZ_Var.value	
+	Vars[18][0] = EZ_Var.value
+	coup_res['5'] = coup_var.value	
 	#dual update of coupling constraint 5
-	Duals['5'] = Duals['5'] + Constants.ADMM_PEN * ( coup_var.value )	
+	#Duals['5'] = Duals['5'] + Constants.ADMM_PEN * ( coup_var.value )	
 
 def send_solved_eqn(Conses_neigh_vars , Queue , My_queue_id , eqn_type):
 	comm = MPI.COMM_WORLD
@@ -559,3 +568,12 @@ def recv_updated_solved_vars(Vars , My_agent_id , My_queue_id , eqn_type , Queue
 		TAG = (1000 * My_agent_id) + (100 * My_queue_id)+ ( 10 * queue_id ) + eqn_type
 		data = comm.recv(source = agent_id , tag = TAG)
 		Vars[var_index][(agent_id, queue_id)] = data
+
+def compute_lagrangian(Vars, Duals , Up_queue , Down_queue , arr_rate, turn_prop , up_turn_prop , coup_res):
+	obj = Get_total_queue_objective(Vars, Duals, Up_queue, Down_queue , arr_rate , turn_prop , up_turn_prop)
+
+	obj = obj + (Duals['2'] * coup_res['2']) + Constants.ADMM_PEN * (coup_res['2'] * coup_res['2'])/2.0
+	obj = obj + (Duals['4'] * coup_res['4']) + Constants.ADMM_PEN * (coup_res['4'] * coup_res['4'])/2.0
+	obj = obj + (Duals['5'] * coup_res['5']) + Constants.ADMM_PEN * (coup_res['5'] * coup_res['5'])/2.0
+
+	return obj.value

@@ -109,7 +109,18 @@ class TrafficAgentModel(object):
 		
 		return obj	
 
-	
+	def get_primal_objective(self):
+		obj = 0
+		for i in range(self._local_queue_num):
+			obj = obj + self.get_local_queue(i).get_primal_obj()
+		return obj
+
+	def get_total_lagrangian(self):	
+		obj = 0
+		for i in range(self._local_queue_num):
+			obj = obj + self.get_local_queue(i).compute_lagrangian()
+		return obj
+
 	def get_new_data(self):
 		comm = MPI.COMM_WORLD
 		lb = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_LOWER_BOUNDS)	
@@ -161,10 +172,13 @@ class TrafficAgentModel(object):
 	 		obj = self.get_new_objective()	
 			prob = Problem(Minimize(obj), constraints)
 			prob.solve(warm_start = True)
-			print prob.value
-
+			#print prob.value
 			self.Update_consensus_vars()
 			self.Update_Dual_Vars()	 	
+			
+			#print self.get_total_lagrangian()
+			print self.get_primal_objective().value
+
 			iter = iter + 1
 	
 class TrafficQueue(object):
@@ -175,7 +189,8 @@ class TrafficQueue(object):
 		self.ub = []
 		self._constraints = []
 		self._vars = []
-		self._dual_vars	= []			
+		self._dual_vars	= []
+		self._coup_res = dict()			
 
 		'''local variables'''
 		self._arr_rate = 0
@@ -337,7 +352,7 @@ class TrafficQueue(object):
 		return Solver.Get_total_queue_objective(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop , self._turn_prop_up) 	
 		
 	def Update_Dual_Vars(self):
-		return Solver.Update_Dual_Vars(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop, self._turn_prop_up)
+		return Solver.Update_Dual_Vars(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop, self._turn_prop_up , self._coup_res)
 
 	def send_rel_vars(self):
 		return Solver.send_rel_vars(self._vars , self._dual_vars , self._upstream_queue, self._downstream_queue, self._turn_prop , self._queue_id , self.lb , self.ub , self._turn_prop_up)
@@ -346,10 +361,17 @@ class TrafficQueue(object):
 		return Solver.receive_rel_vars(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id )
 
 	def solve_send_vars(self , neigh_data):
-		return Solver.solve_coupling_eqns_send_sols(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id , neigh_data , self._ext_arr_rate , self.lb , self.ub)
+		return Solver.solve_coupling_eqns_send_sols(self._vars , self._dual_vars , self._upstream_queue , self._downstream_queue , self._queue_id , neigh_data , self._ext_arr_rate , self.lb , self.ub , self._coup_res)
 
 	def recv_update_solved_vars(self):
 		return Solver.recv_update_solved_vars(self._vars , self._agent_id , self._queue_id , self._upstream_queue , self._downstream_queue)
+
+	def get_primal_obj(self):
+		obj = inv_pos(1 - self._vars[7][0]) - 1
+		return obj
+
+	def compute_lagrangian(self):
+		return Solver.compute_lagrangian(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop , self._turn_prop_up , self._coup_res)	
 
 # def main():
 # 	'''create agents'''

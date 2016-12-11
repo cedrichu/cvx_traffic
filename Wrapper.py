@@ -196,7 +196,11 @@ if __name__ == '__main__':
 
 		t.init_queue_solver_vars()	
 		t.solve_problems()
-	
+
+
+
+
+		
 
 
 
