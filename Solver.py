@@ -137,7 +137,7 @@ def create_lower_upper_bound_constraints(Vars , lb , ub , Down_queue , Up_queue)
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
 		eqns.append( Vars[14][(agent_id, queue_id)] >= lb[14][(agent_id, queue_id)])	#14 - Az_i^j 
-		eqns.append( Vars[14][(agent_id, queue_id)] <= lb[14][(agent_id, queue_id)])	#14 - Az_i^j 
+		eqns.append( Vars[14][(agent_id, queue_id)] <= ub[14][(agent_id, queue_id)])	#14 - Az_i^j 
 		
 
 	eqns.append( Vars[15][0] >= lb[15][0] )

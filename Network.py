@@ -167,15 +167,16 @@ class TrafficAgentModel(object):
 	 	
 	 	iter = 0
 
-	 	while(iter < 20000):	
+	 	while(iter < 200):	
 	 		obj = self.get_new_objective()	
 			prob = Problem(Minimize(obj), constraints)
 			prob.solve(solver=ECOS , warm_start = True , max_iters = 2000 , abstol = 10 ** -11)
 			#print prob.value
 			self.Update_consensus_vars()
-			self.Update_Dual_Vars()	 	
 			
 			#print self.compute_residuals() , iter
+			self.Update_Dual_Vars()	 	
+			
 			print self.get_primal_objective().value , iter
 
 			iter = iter + 1
