@@ -137,7 +137,10 @@ def create_lower_upper_bound_constraints(Vars , lb , ub):
 	return eqns	
 
 def Create_eqn_1(Vars , lb, ub):
-	return Construct_McCormick( Vars[0][0] , Vars[8][0] , Vars[1][0], lb[0][0], ub[0][0] , lb[8][0] , ub[8][0] )
+	eqns = []
+	eqns.append( 1 - Vars[2][0] == Vars[8][0] )
+	eqns += Construct_McCormick( Vars[0][0] , Vars[8][0] , Vars[1][0], lb[0][0], ub[0][0] , lb[8][0] , ub[8][0] )
+	return eqns
 
 def Create_eqn_3(Vars , lb, ub):
 	eqns = []
