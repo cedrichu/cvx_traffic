@@ -634,4 +634,4 @@ def compute_residuals(Vars, Duals , Up_queue , Down_queue , arr_rate, turn_prop 
 
 	res = res + (coup_res['2'] * coup_res['2'])	+ (coup_res['4'] * coup_res['4']) + (coup_res['5'] * coup_res['5'])
 
-	return math.sqrt(res)
+	return res

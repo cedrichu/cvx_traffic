@@ -59,7 +59,7 @@ class BB_Tree_Agent(object):
 	
 	def __init__(self , iNumAgents):
 		self.iNumAgents = iNumAgents
-		self.construct_prob()
+		#self.construct_prob()
 		self.UB = float('inf')
 
 	def construct_prob(self):
@@ -132,19 +132,24 @@ class BB_Tree_Agent(object):
 		self.tree[obj + random.random() * Constants.OBJ_PERT_FACTOR] = Node(lb2, ub , dual_sol)	
 		
 	def begin_optimization(self):
-		while (len(self.tree) > 0 ):
-			[obj , node] = self.get_next_node()
+		iter = 0
 
-			if(obj >= self.UB):
-				continue
+		comm = MPI.COMM_WORLD
+		obj_list = []
+		inf_list = []
+		while(iter < Constants.MAX_ITER):
+			obj = 0
+			infeas = 0
+			for i in range(0 , self.iNumAgents):
+				data = comm.recv(source = i, tag = Constants.OPT_VAL)
+				obj = obj + data[0]
+				infeas = infeas + data[1] 
 
-			self.send_agent_node_info(node)
-			[obj , feasible, primal_sol, dual_sol] = self.get_solution_from_agents()
-			self.create_new_nodes(obj, primal_sol , dual_sol , node)
-
-			if (feasible) and (obj < self.UB):
-				self.UB = obj
-	
+			print obj , math.sqrt(infeas) , iter	
+			obj_list.append(obj)
+			inf_list.append(math.sqrt(infeas))	
+			iter = iter + 1
+		
 
 if __name__ == '__main__':
 	
@@ -154,8 +159,8 @@ if __name__ == '__main__':
 
 	if ( Constants.BB_TREE_ID == rank ):
 		tree = BB_Tree_Agent(iNumAgents)
-		node = tree.get_next_node()
-		#tree.begin_optimization()
+		#node = tree.get_next_node()
+		tree.begin_optimization()
 	else:
 		queue_num = 4
 		t1 = Network.TrafficAgentModel(0,queue_num)
