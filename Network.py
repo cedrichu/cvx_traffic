@@ -1,6 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 from cvxpy import *
+from scipy.optimize import fsolve
 import Solver 
 import Constants
 
@@ -160,6 +161,11 @@ class TrafficAgentModel(object):
 		for i in range(self._local_queue_num):
 			self.get_local_queue(i).Update_Dual_Vars()
 
+	def Check_Feasibility(self):
+		for i in range(self._local_queue_num):	
+			self.get_local_queue(i).feasibility()	
+
+
 	def solve_problems(self):	 	
 	 	constraints =  self.get_all_constraints()	 	
 	 	
@@ -177,10 +183,16 @@ class TrafficAgentModel(object):
 			
 			#print self.compute_residuals() , iter
 			self.Update_Dual_Vars()	 	
-			
+			print 'agent_id', self._agent_id
 			print self.get_primal_objective().value , iter
+			
+			self.Check_Feasibility()
+
 
 			iter = iter + 1
+
+	
+	
 	
 class TrafficQueue(object):
 	def __init__(self, agent_id, queue_id):
@@ -373,6 +385,62 @@ class TrafficQueue(object):
 
 	def compute_residuals(self):
 		return Solver.compute_residuals(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop , self._turn_prop_up , self._coup_res)	
+
+	'''check feasibility'''
+
+	
+	def feasibility(self):
+
+		zG = []
+		for i in range(14):
+			zG.append(self._vars[i][0].value)
+
+
+		solution,infodict,ier, msg = fsolve(self.system_equations, zG, full_output=True)
+		
+		print 'feasibility'
+		print solution
+		#print infodict
+		print ier
+		print msg
+		
+		return ier
+
+	
+	def system_equations(self, var):
+		F = []
+		
+		F += [var[0] - var[1]*var[8]] #(1)
+		
+		for q in self._downstream_queue: 
+			#F += [self._vars[14][(q._agent_id, q._queue_id)].value  - self._turn_prop[(q._agent_id,q._queue_id)]*var[1]] #(2)
+			print q._agent_id, q._queue_id, self._vars[14][(q._agent_id, q._queue_id)].value/self._turn_prop[(q._agent_id,q._queue_id)], var[1]
+		F += [ self._vars[15].value - var[1] + self._ext_arr_rate*(1-var[2])] #(2)
+		
+		F += [var[9] - var[11] - var[6]*var[10]]  #(3)
+		
+		F += [self._vars[16].value - var[1]*var[10]] #(4)
+		# for q in self._upstream_queue:
+		# 	F += [self._vars[17][(q._agent_id, q._queue_id)].value - var[1]*var[9]]#(4)
+		
+		F += [self._vars[18].value - var[6]]#(5)
+		# for q in self._upstream_queue:
+		# 	F += [self._vars[19][(q._agent_id, q._queue_id)].value - self._turn_prop_up[(q._agent_id,q._queue_id)]*var[2]] #(5)
+		
+		k = pow(var[7],self._capacity)
+		F += [var[2] - (k-pow(var[7],self._capacity+1))]#/(1-k*var[7])] #6
+
+		F += [var[7] - var[0]*var[9]] #7
+
+		F += [var[8] - 1 + var[2]]
+		F += [var[1] - var[0]*var[8]] #8
+		F += [var[9]*var[3]  - 1] #9
+		F += [var[11]*var[4]  - 1] #10
+		F += [var[10]*var[5]  - var[6]] #11
+		F += [var[1] - var[13]*var[5]] #12
+		F += [var[1] - var[12] * var[3]] #13
+		return F
+
 
 # def main():
 # 	'''create agents'''
