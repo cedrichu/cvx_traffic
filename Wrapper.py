@@ -74,17 +74,25 @@ def get_ratio(num , primal_sol , lb , ub , mst_inf_ag , mst_inf_que):
 
 	if(ub_val == lb_val):
 		return 0
+	elif( ub_val - lb_val < 10 ** (-4) ):
+		return 0	
+
 
 	return ( (val - lb_val)/ (ub_val - lb_val)) * ( (ub_val - val)/(ub_val - lb_val) )
 
-def get_vol_split(num1, num2 , primal_sol , lb , ub , mst_inf_ag , mst_inf_que):
+def get_vol_split(num1, num2 , mst_inf_ind ,primal_sol , lb , ub , mst_inf_ag , mst_inf_que):
 	val1 = ub[mst_inf_ag][mst_inf_que][num1][0] - lb[mst_inf_ag][mst_inf_que][num1][0]
 	val2 = ub[mst_inf_ag][mst_inf_que][num2][0] - lb[mst_inf_ag][mst_inf_que][num2][0]
+	val3 = ub[mst_inf_ag][mst_inf_que][mst_inf_ind][0] - lb[mst_inf_ag][mst_inf_que][mst_inf_ind][0]
 
-	if(val1 > val2):
+	val = max(val1, val2, val3)
+
+	if(val == val1):
 		return num1 , (ub[mst_inf_ag][mst_inf_que][num1][0] + lb[mst_inf_ag][mst_inf_que][num1][0])/2.0
-	else:
+	elif(val == val2):
 		return num2	, (ub[mst_inf_ag][mst_inf_que][num2][0] + lb[mst_inf_ag][mst_inf_que][num2][0])/2.0
+	else:
+		return mst_inf_ind , (ub[mst_inf_ag][mst_inf_que][mst_inf_ind][0] + lb[mst_inf_ag][mst_inf_que][mst_inf_ind][0])/2.0
 
 def get_best_split_ratio(num1 , num2 , primal_sol , lb, ub , mst_inf_ag , mst_inf_que , mst_inf_ind):
 	ratio1 = get_ratio(num1 , primal_sol , lb, ub , mst_inf_ag , mst_inf_que )
@@ -103,7 +111,7 @@ def get_best_split_ratio(num1 , num2 , primal_sol , lb, ub , mst_inf_ag , mst_in
 			return mst_inf_ind , primal_sol[mst_inf_ag][mst_inf_que][mst_inf_ind][0]		
 	else:
 		#print 'Volume Split'
-		return get_vol_split(num1, num2 , primal_sol , lb , ub , mst_inf_ag , mst_inf_que)
+		return get_vol_split(num1, num2 , mst_inf_ind ,primal_sol , lb , ub , mst_inf_ag , mst_inf_que)
 				
 def get_split_point(idx_1 , idx_2 , idx_3 , idx_4, idx_5, sp_indx , primal_sol , lb, ub , mst_inf_ag , mst_inf_que , mst_inf_ind):
 	if(idx_1):
@@ -214,13 +222,20 @@ class BB_Tree_Agent(object):
 							idx_1 , idx_2 , idx_3 , idx_4, idx_5 = set_truth(False, False, False, False, True)	
 
 
-		if(max_dev == 0):
+		if(max_dev <= 10^(-2)):
 			return True
 
 		split_index , split_val = get_split_point(idx_1 , idx_2 , idx_3 , idx_4, idx_5, sp_indx , primal_sol , node.lb, node.ub , mst_inf_ag , mst_inf_que , mst_inf_ind)
 
-		print mst_inf_ag , mst_inf_que, split_index , split_val , node.lb[mst_inf_ag][mst_inf_que][split_index][0] , node.ub[mst_inf_ag][mst_inf_que][split_index][0]
+		print mst_inf_ag , mst_inf_que, split_index , node.lb[mst_inf_ag][mst_inf_que][split_index][0] , split_val, node.ub[mst_inf_ag][mst_inf_que][split_index][0]
 		#print node.lb[mst_inf_ag][mst_inf_que][mst_inf_ind][0] , primal_sol[mst_inf_ag][mst_inf_que][mst_inf_ind][0] , node.ub[mst_inf_ag][mst_inf_que][mst_inf_ind][0]					
+
+		if(split_val < node.lb[mst_inf_ag][mst_inf_que][split_index][0]):
+			print 'Occurence1'
+			split_val = node.lb[mst_inf_ag][mst_inf_que][split_index][0]
+		elif(split_val > node.ub[mst_inf_ag][mst_inf_que][split_index][0]):
+			print 'Occurence2'	
+			split_val = node.ub[mst_inf_ag][mst_inf_que][split_index][0]
 
 		ub1 = deepcopy(node.ub)
 		ub1[mst_inf_ag][mst_inf_que][split_index][0] = split_val
@@ -228,9 +243,15 @@ class BB_Tree_Agent(object):
 		lb2 = deepcopy(node.lb)
 		lb2[mst_inf_ag][mst_inf_que][split_index][0] = split_val
 
-		self.tree[opt + random.random() * Constants.OBJ_PERT_FACTOR] = Node(node.lb, ub1 , node.depth + 1 , opt)
-		self.tree[opt + random.random() * Constants.OBJ_PERT_FACTOR] = Node(lb2, node.ub , node.depth + 1 , opt)	
+		key1 = 1000 * (opt + random.random() * Constants.OBJ_PERT_FACTOR)
+		key2 = 1000 * (opt + random.random() * Constants.OBJ_PERT_FACTOR)
 
+		self.tree[key1] = Node(lb2, node.ub , node.depth + 1 , opt)	
+		self.tree[key2] = Node(node.lb, ub1 , node.depth + 1 , opt)
+
+		#print key1 , node.lb[mst_inf_ag][mst_inf_que][split_index][0], ub1[mst_inf_ag][mst_inf_que][split_index][0]
+		#print key2 , lb2[mst_inf_ag][mst_inf_que][split_index][0], node.ub[mst_inf_ag][mst_inf_que][split_index][0]
+		
 		return False
 		
 	def begin_optimization(self):
@@ -288,13 +309,22 @@ if __name__ == '__main__':
 	tree = BB_Tree_Agent(4)
 	tree.get_node_info(agent_list)
 
+	best_sol = float('inf')
+
 	while(tree.isEmpty() == False):
 
 		constraints = []
 		obj = 0	
 		
-		node = tree.get_next_node()[1]
+		node_key = tree.get_next_node()
 		
+		key = node_key[0]
+		node = node_key[1]
+
+		if(key > best_sol):
+			continue
+
+
 		for i in range(0 , 4):		
 			agent_list[i].set_lower_upper_bound(node)
 
@@ -307,24 +337,36 @@ if __name__ == '__main__':
 		
 		opt = Minimize(obj)
 		prob = Problem(opt , constraints)
-		prob.solve(solver = ECOS , max_iters = 20000 , reltol = 10**(-9) , feastol = 10**(-10) , abstol = 10**(-11), verbose = False)
+		prob.solve(solver = ECOS , max_iters = 20000 , reltol = 10**(-9) , feastol = 10**(-6) , abstol = 10**(-7), verbose = False)
 		
 		#print 'Depth: ', node.depth , 'Opt Val: ', opt.value , 'Pred_val: ', node.pred_val, 'Accuracy: ' , prob.status , 'Tree Length: ', tree.get_length() 
 
 		if('infeasible' == prob.status):
-			print 'Depth: ', node.depth , 'Opt Val: ', opt.value , 'Pred_val: ', node.pred_val, 'Accuracy: ' , prob.status , 'Tree Length: ', tree.get_length()
+			print 'Depth: ', node.depth , 'Opt Val:', opt.value , 'Pred_val:', node.pred_val, 'Accuracy:' , prob.status , 'Tree Length:', tree.get_length()
 			continue
 
-		print 'Depth: ', node.depth , 'Delta Improv: ', 1000 * (opt.value - node.pred_val), 'Accuracy: ' , prob.status , 'Tree Length: ', tree.get_length() 
+		print 'Depth: ', node.depth , 'Delta Improv:', 1000 * (opt.value - node.pred_val), 'Accuracy:' , prob.status , 'Tree Length:', tree.get_length() 
 
 		primal_sol = dict()
 		for i in range(iNumAgents):
 			primal_sol[i] = agent_list[i].get_sol()
 		
+		#Hsu-Chieh
+		#call function, get the objective, if (objective < best_solution) best_solution = objective
+		#hsu_chieh = ()
+
+		# if(best_sol > hsu_chieh):
+		# 	hsu_chieh = best_sol
+
 		feas_sol = tree.create_new_nodes(opt.value , primal_sol , node , agent_list)	
 
 		if(feas_sol):
 			print 'Perfectly feasible solution'
+			print 'Perfectly feasible solution'
+			print 'Perfectly feasible solution'
+
+
+
 
 
 
