@@ -3,6 +3,7 @@ import numpy as np
 import Constants
 from mpi4py import MPI
 import math
+import Network
 
 def Variable_Initialization(Up_queue, Down_queue):
 	Vars = []
@@ -56,17 +57,14 @@ def Variable_Initialization(Up_queue, Down_queue):
 		agent_id = Down_queue[i]._agent_id
 		queue_id = Down_queue[i]._queue_id
 		Vars[14][(agent_id, queue_id)] = Variable(1)	#14 - Az_i^j 
-		Vars[14][(agent_id, queue_id)].value = 0
 		Dual['A'][(agent_id, queue_id)] = 0 
 
 	Vars.append([])	
-	Vars[15] = Variable(1)
-	Vars[15].value = 0									#15 - Bz_i
+	Vars[15] = Variable(1)								#15 - Bz_i
 	Dual['B'] = 0 
 
 	Vars.append([])	
 	Vars[16]= Variable(1)								#16 - Cz_i
-	Vars[16].value = 0
 	Dual['C'] = 0
 
 	Vars.append(dict())
@@ -75,12 +73,10 @@ def Variable_Initialization(Up_queue, Down_queue):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
 		Vars[17][(agent_id, queue_id)] = Variable(1)			#17 - Dz_i^j
-		Vars[17][(agent_id, queue_id)].value = 0
 		Dual['D'][(agent_id, queue_id)] = 0
 
 	Vars.append([])			
 	Vars[18]= Variable(1)									#18 - EZ_i
-	Vars[18].value = 0
 	Dual['E'] = 0
 	
 	Vars.append(dict())
@@ -89,7 +85,6 @@ def Variable_Initialization(Up_queue, Down_queue):
 		agent_id = Up_queue[i]._agent_id
 		queue_id = Up_queue[i]._queue_id
 		Vars[19][(agent_id, queue_id)] = Variable(1)			#19 - Fz_i^j 
-		Vars[19][(agent_id, queue_id)].value = 0
 		Dual['F'][(agent_id, queue_id)] = 0
 	 
 	Dual['2'] = 0
@@ -635,3 +630,77 @@ def compute_residuals(Vars, Duals , Up_queue , Down_queue , arr_rate, turn_prop 
 	res = res + (coup_res['2'] * coup_res['2'])	+ (coup_res['4'] * coup_res['4']) + (coup_res['5'] * coup_res['5'])
 
 	return math.sqrt(res)
+
+def get_consensus_constraints(Vars, Duals , Up_queue , Down_queue , arr_rate, turn_prop , up_turn_prop):	
+	
+	constraints = []
+	#A
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		eqn = turn_prop[(agent_id, queue_id)] * Vars[1][0] - Vars[14][(agent_id, queue_id)]
+		constraints.append( eqn == 0 )
+
+	#B
+	eqn = Vars[1][0] - (arr_rate * Vars[8][0]) - Vars[15][0]
+	constraints.append(eqn == 0)
+
+	#C
+	eqn = Vars[13][0] - Vars[16][0]
+	constraints.append(eqn == 0)
+
+	#D
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		eqn = Vars[12][0] - Vars[17][(agent_id , queue_id)]
+		constraints.append(eqn == 0)	
+
+	#E
+	eqn = Vars[6][0] - Vars[18][0]
+	constraints.append(eqn == 0)
+
+	#F
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		eqn = Vars[19][(agent_id , queue_id)] - (up_turn_prop[(agent_id , queue_id)] * Vars[2][0])	
+		constraints.append(eqn == 0)
+
+	return constraints
+
+def get_coupling_constraints(Vars, Up_queue , Down_queue , agent_list , My_agent_id , My_queue_id):
+	constraints = []
+
+	#2
+	eqn = -Vars[15][0]
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		q = agent_list[agent_id].get_local_queue(queue_id)
+		eqn = eqn + q._vars[14][(My_agent_id , My_queue_id)]
+
+	constraints.append(eqn == 0)	
+
+	#4
+	eqn = -Vars[16][0]
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		q = agent_list[agent_id].get_local_queue(queue_id)
+		eqn = eqn + q._vars[17][(My_agent_id , My_queue_id)]
+
+	constraints.append(eqn == 0)
+
+	#5
+	eqn = -Vars[18][0]
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		q = agent_list[agent_id].get_local_queue(queue_id)
+		eqn = eqn + q._vars[19][(My_agent_id , My_queue_id)]
+
+	constraints.append(eqn == 0)
+
+	return constraints
+		

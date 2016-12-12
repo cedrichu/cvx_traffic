@@ -148,54 +148,71 @@ class BB_Tree_Agent(object):
 
 if __name__ == '__main__':
 	
-	comm = MPI.COMM_WORLD
-	rank = comm.Get_rank()
+	#comm = MPI.COMM_WORLD
+	#rank = comm.Get_rank()
 	iNumAgents = 4;
 
-	if ( Constants.BB_TREE_ID == rank ):
-		tree = BB_Tree_Agent(iNumAgents)
-		node = tree.get_next_node()
-		#tree.begin_optimization()
-	else:
-		queue_num = 4
-		t1 = Network.TrafficAgentModel(0,queue_num)
-		t2 = Network.TrafficAgentModel(1,queue_num)
-		t3 = Network.TrafficAgentModel(2,queue_num)
-		t4 = Network.TrafficAgentModel(3,queue_num)
-		agent_list = [t1,t2,t3,t4]
-		'''specify external arrival rates'''
-		ext_arr_rate = 5.0
-		t1.set_ext_arr_rate([ext_arr_rate,0,0,ext_arr_rate])
-		t2.set_ext_arr_rate([ext_arr_rate,ext_arr_rate,0,0])
-		t3.set_ext_arr_rate([0,ext_arr_rate,ext_arr_rate,0])
-		t4.set_ext_arr_rate([0,0,ext_arr_rate,ext_arr_rate])
-		'''specify connection'''
-		n = len(agent_list)
-		adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
-		adjacent_matrix[0][1] = [[0,3,2],3]
-		adjacent_matrix[0][3] = [[1,0,3],0]
-		adjacent_matrix[3][2] = [[0,3,2],3]
-		adjacent_matrix[3][0] = [[1,2,3],2]
-		adjacent_matrix[1][2] = [[1,0,3],0]
-		adjacent_matrix[1][0] = [[0,1,2],1]
-		adjacent_matrix[2][1] = [[1,2,3],2]
-		adjacent_matrix[2][3] = [[0,1,2],1]
-		'''construct network'''
-		network = Network.TrafficNetwork(agent_list, adjacent_matrix)
+	queue_num = 4
 
-		t = 0
+	t1 = Network.TrafficAgentModel(0,queue_num)
+	t2 = Network.TrafficAgentModel(1,queue_num)
+	t3 = Network.TrafficAgentModel(2,queue_num)
+	t4 = Network.TrafficAgentModel(3,queue_num)
+	agent_list = [t1,t2,t3,t4]
+	'''specify external arrival rates'''
+	ext_arr_rate = 5.0
+	ext_arr_rate2 = 2.0
+	t1.set_ext_arr_rate([ext_arr_rate2,0,0,ext_arr_rate])
+	t2.set_ext_arr_rate([ext_arr_rate2,ext_arr_rate,0,0])
+	t3.set_ext_arr_rate([0,ext_arr_rate,ext_arr_rate,0])
+	t4.set_ext_arr_rate([0,0,ext_arr_rate2,ext_arr_rate])
+	'''specify connection'''
+	n = len(agent_list)
+	adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
+	adjacent_matrix[0][1] = [[0,3,2],3]
+	adjacent_matrix[0][3] = [[1,0,3],0]
+	adjacent_matrix[3][2] = [[0,3,2],3]
+	adjacent_matrix[3][0] = [[1,2,3],2]
+	adjacent_matrix[1][2] = [[1,0,3],0]
+	adjacent_matrix[1][0] = [[0,1,2],1]
+	adjacent_matrix[2][1] = [[1,2,3],2]
+	adjacent_matrix[2][3] = [[0,1,2],1]
+	'''construct network'''
+	network = Network.TrafficNetwork(agent_list, adjacent_matrix)
 
-		if(0 ==  rank):
-			t = t1
-		elif(1 == rank):
-			t = t2
-		elif(2 == rank):
-			t = t3
-		else:		
-			t = t4
+	constraints = []
+	obj = 0
 
+	for i in range(0,4):
+		t = agent_list[i]
 		t.init_queue_solver_vars()	
-		t.solve_problems()
+		
+	for i in range(0 , 4):
+		t = agent_list[i]
+		constraints += t.get_all_constraints()
+		constraints += t.get_consensus_constraints()
+		constraints += t.get_coupling_constraints(agent_list)
+		obj = obj + t.get_primal_objective()
+	
+	opt = Minimize(obj)
+	prob = Problem(opt , constraints)
+	prob.solve(verbose = True)
+	#print opt.value
+	for a in agent_list:
+		print 'agent id', a._agent_id
+		for q in a._local_queue:
+			print 'queue id',q._queue_id
+
+			for v in q._vars:
+				if isinstance(v, list):
+					print v[0].value
+				else:
+					print 'dict', v
+					# for key, value in v.iteritems():
+					# 	print v[key].value
+			q.feasibility()
+
+		
 
 
 

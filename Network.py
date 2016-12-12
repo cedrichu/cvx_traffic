@@ -1,9 +1,9 @@
 import numpy as np
 from mpi4py import MPI
 from cvxpy import *
-from scipy.optimize import fsolve
 import Solver 
 import Constants
+from scipy.optimize import fsolve
 
 class TrafficNetwork(object):
 	def __init__(self, agent_list, adjacent_matrix):
@@ -54,7 +54,6 @@ class TrafficAgentModel(object):
 	def init_queue_solver_vars(self):		
 		for i in range(self._local_queue_num):
 			self.get_local_queue(i).Initialize_variables()			
-
 
 	def set_neighbors(self, neighbor, edge):
 		
@@ -156,15 +155,25 @@ class TrafficAgentModel(object):
 		for i in range(self._local_queue_num):	
 			self.get_local_queue(i).recv_update_solved_vars()			
 
-	#updates only dual variables corresponding to consensus constraints, 
+	def get_consensus_constraints(self):
+		constraints = []
+		for i in range(self._local_queue_num):
+			constraints += self.get_local_queue(i).get_consensus_constraints()
+		return constraints	
+
+	def get_coupling_constraints(self , agent_list):
+		constraints = []
+		for i in range(self._local_queue_num):
+			constraints += self.get_local_queue(i).get_coupling_constraints(agent_list)
+		return constraints		
+
 	def Update_Dual_Vars(self):
 		for i in range(self._local_queue_num):
 			self.get_local_queue(i).Update_Dual_Vars()
 
 	def Check_Feasibility(self):
 		for i in range(self._local_queue_num):	
-			self.get_local_queue(i).feasibility()	
-
+			self.get_local_queue(i).feasibility()
 
 	def solve_problems(self):	 	
 	 	constraints =  self.get_all_constraints()	 	
@@ -183,16 +192,14 @@ class TrafficAgentModel(object):
 			
 			#print self.compute_residuals() , iter
 			self.Update_Dual_Vars()	 	
-			print 'agent_id', self._agent_id
+			
+			print 'feasibility agent_id', self._agent_id
 			print self.get_primal_objective().value , iter
 			
 			self.Check_Feasibility()
 
 
 			iter = iter + 1
-
-	
-	
 	
 class TrafficQueue(object):
 	def __init__(self, agent_id, queue_id):
@@ -255,7 +262,7 @@ class TrafficQueue(object):
 		self.lb.append([0]) #t
 		self.lb.append([self._epsilon]) #w
 		self.lb.append([0]) #f
-		self.lb.append([0]) #omega
+		self.lb.append([0]) #r
 
 
 		lb_consus_down1= {}
@@ -293,7 +300,7 @@ class TrafficQueue(object):
 		self.ub.append([2/self._epsilon])#t
 		self.ub.append([2/self._epsilon])#w
 		self.ub.append([2*self._speed_limit/self._epsilon])#f
-		self.ub.append([2*self._speed_limit/self._epsilon])#omega
+		self.ub.append([2*self._speed_limit/self._epsilon])#r
 
 
 		ub_consus_down1= {}
@@ -383,17 +390,20 @@ class TrafficQueue(object):
 		obj = inv_pos(1 - self._vars[7][0]) - 1
 		return obj
 
+	def get_consensus_constraints(self):
+		return Solver.get_consensus_constraints(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop , self._turn_prop_up)
+
 	def compute_residuals(self):
 		return Solver.compute_residuals(self._vars, self._dual_vars , self._upstream_queue , self._downstream_queue , self._ext_arr_rate, self._turn_prop , self._turn_prop_up , self._coup_res)	
 
-	'''check feasibility'''
+	def get_coupling_constraints(self , agent_list):
+		return Solver.get_coupling_constraints(self._vars, self._upstream_queue , self._downstream_queue , agent_list , self._agent_id , self._queue_id)
 
-	
 	def feasibility(self):
 
 		zG = []
 		for i in range(14):
-			zG.append(self._vars[i][0].value)
+			zG.append(self.lb[i][0])
 
 
 		solution,infodict,ier, msg = fsolve(self.system_equations, zG, full_output=True)
@@ -412,20 +422,27 @@ class TrafficQueue(object):
 		
 		F += [var[0] - var[1]*var[8]] #(1)
 		
+		x = 0
 		for q in self._downstream_queue: 
-			#F += [self._vars[14][(q._agent_id, q._queue_id)].value  - self._turn_prop[(q._agent_id,q._queue_id)]*var[1]] #(2)
-			print q._agent_id, q._queue_id, self._vars[14][(q._agent_id, q._queue_id)].value/self._turn_prop[(q._agent_id,q._queue_id)], var[1]
-		F += [ self._vars[15].value - var[1] + self._ext_arr_rate*(1-var[2])] #(2)
+			x += pow(self._vars[14][(q._agent_id, q._queue_id)].value  - self._turn_prop[(q._agent_id,q._queue_id)]*var[1],2) #(2)
+			#print q._agent_id, q._queue_id, self._vars[14][(q._agent_id, q._queue_id)].value/self._turn_prop[(q._agent_id,q._queue_id)], var[1]
+		x += pow(self._vars[15].value - var[1] + self._ext_arr_rate*(1-var[2]),2) #(2)
+		F += [x]
 		
 		F += [var[9] - var[11] - var[6]*var[10]]  #(3)
 		
-		F += [self._vars[16].value - var[1]*var[10]] #(4)
-		# for q in self._upstream_queue:
-		# 	F += [self._vars[17][(q._agent_id, q._queue_id)].value - var[1]*var[9]]#(4)
+
+		y = 0
+		y += pow(self._vars[16].value - var[1]*var[10],2) #(4)
+		for q in self._upstream_queue:
+			y += pow(self._vars[17][(q._agent_id, q._queue_id)].value - var[1]*var[9],2)#(4)
+		F += [y]
 		
-		F += [self._vars[18].value - var[6]]#(5)
-		# for q in self._upstream_queue:
-		# 	F += [self._vars[19][(q._agent_id, q._queue_id)].value - self._turn_prop_up[(q._agent_id,q._queue_id)]*var[2]] #(5)
+		z = 0
+		z += pow(self._vars[18].value - var[6],2)#(5)
+		for q in self._upstream_queue:
+			z += pow(self._vars[19][(q._agent_id, q._queue_id)].value - self._turn_prop_up[(q._agent_id,q._queue_id)]*var[2],2) #(5)
+		F += [z]
 		
 		k = pow(var[7],self._capacity)
 		F += [var[2] - (k-pow(var[7],self._capacity+1))]#/(1-k*var[7])] #6
@@ -440,7 +457,6 @@ class TrafficQueue(object):
 		F += [var[1] - var[13]*var[5]] #12
 		F += [var[1] - var[12] * var[3]] #13
 		return F
-
 
 # def main():
 # 	'''create agents'''
