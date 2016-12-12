@@ -193,10 +193,10 @@ class TrafficAgentModel(object):
 			#print self.compute_residuals() , iter
 			self.Update_Dual_Vars()	 	
 			
-			print 'feasibility agent_id', self._agent_id
+			#print 'feasibility agent_id', self._agent_id
 			print self.get_primal_objective().value , iter
 			
-			self.Check_Feasibility()
+			#self.Check_Feasibility()
 
 
 			iter = iter + 1
@@ -457,46 +457,7 @@ class TrafficQueue(object):
 		F += [var[1] - var[12] * var[3]] #13
 		return F
 
-	def system_equations2(self):
-		F = []
-		
-		F += [var[0] - var[1]*var[8]] #(1)
-		
-		x = 0
-		# for q in self._downstream_queue: 
-		# 	x += pow(self._vars[14][(q._agent_id, q._queue_id)].value  - self._turn_prop[(q._agent_id,q._queue_id)]*var[1],2) #(2)
-		x += self._vars[15].value - var[1] + self._ext_arr_rate*(1-var[2]) #(2)
-		F += [x]
-		
-		F += [var[9] - var[11] - var[6]*var[10]]  #(3)
-		
-
-		y = 0
-		y += self._vars[16].value - var[1]*var[10] #(4)
-		# for q in self._upstream_queue:
-		# 	y += pow(self._vars[17][(q._agent_id, q._queue_id)].value - var[1]*var[9],2)#(4)
-		F += [y]
-		
-		z = 0
-		z += self._vars[18].value - var[6]#(5)
-		# for q in self._upstream_queue:
-		# 	z += pow(self._vars[19][(q._agent_id, q._queue_id)].value - self._turn_prop_up[(q._agent_id,q._queue_id)]*var[2],2) #(5)
-		F += [z]
-		
-		k = pow(var[7],self._capacity)
-		F += [var[2] - (k-pow(var[7],self._capacity+1))]#/(1-k*var[7])] #6
-
-		F += [var[7] - var[0]*var[9]] #7
-
-		F += [var[8] - 1 + var[2]]
-		F += [var[1] - var[0]*var[8]] #8
-		F += [var[9]*var[3]  - 1] #9
-		F += [var[11]*var[4]  - 1] #10
-		F += [var[10]*var[5]  - var[6]] #11
-		F += [var[1] - var[13]*var[5]] #12
-		F += [var[1] - var[12] * var[3]] #13
-		return F
-
+	
 
 # def main():
 # 	'''create agents'''
