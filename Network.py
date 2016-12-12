@@ -168,7 +168,7 @@ class TrafficAgentModel(object):
 	 	
 	 	iter = 0
 
-	 	while(iter < 200):	
+	 	while(iter < 1000):	
 	 		obj = self.get_new_objective()	
 			prob = Problem(Minimize(obj), constraints)
 			prob.solve(solver=ECOS , warm_start = True , max_iters = 2000 , abstol = 10 ** -11)
@@ -178,8 +178,6 @@ class TrafficAgentModel(object):
 			print self.compute_residuals() , iter
 			self.Update_Dual_Vars()	 	
 			
-			#print self.get_primal_objective().value , iter
-
 			iter = iter + 1
 	
 class TrafficQueue(object):
