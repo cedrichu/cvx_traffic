@@ -403,10 +403,10 @@ class TrafficQueue(object):
 
 		zG = []
 		for i in range(14):
-			zG.append(self.lb[i][0])
+			zG.append(self._vars[i][0].value)
 
 
-		solution,infodict,ier, msg = fsolve(self.system_equations, zG, full_output=True)
+		solution,infodict,ier, msg = fsolve(self.system_equations, zG, full_output=True,maxfev=100,xtol=0.1)
 		
 		print 'feasibility'
 		print solution
@@ -425,7 +425,6 @@ class TrafficQueue(object):
 		x = 0
 		for q in self._downstream_queue: 
 			x += pow(self._vars[14][(q._agent_id, q._queue_id)].value  - self._turn_prop[(q._agent_id,q._queue_id)]*var[1],2) #(2)
-			#print q._agent_id, q._queue_id, self._vars[14][(q._agent_id, q._queue_id)].value/self._turn_prop[(q._agent_id,q._queue_id)], var[1]
 		x += pow(self._vars[15].value - var[1] + self._ext_arr_rate*(1-var[2]),2) #(2)
 		F += [x]
 		
@@ -457,6 +456,47 @@ class TrafficQueue(object):
 		F += [var[1] - var[13]*var[5]] #12
 		F += [var[1] - var[12] * var[3]] #13
 		return F
+
+	def system_equations2(self):
+		F = []
+		
+		F += [var[0] - var[1]*var[8]] #(1)
+		
+		x = 0
+		# for q in self._downstream_queue: 
+		# 	x += pow(self._vars[14][(q._agent_id, q._queue_id)].value  - self._turn_prop[(q._agent_id,q._queue_id)]*var[1],2) #(2)
+		x += self._vars[15].value - var[1] + self._ext_arr_rate*(1-var[2]) #(2)
+		F += [x]
+		
+		F += [var[9] - var[11] - var[6]*var[10]]  #(3)
+		
+
+		y = 0
+		y += self._vars[16].value - var[1]*var[10] #(4)
+		# for q in self._upstream_queue:
+		# 	y += pow(self._vars[17][(q._agent_id, q._queue_id)].value - var[1]*var[9],2)#(4)
+		F += [y]
+		
+		z = 0
+		z += self._vars[18].value - var[6]#(5)
+		# for q in self._upstream_queue:
+		# 	z += pow(self._vars[19][(q._agent_id, q._queue_id)].value - self._turn_prop_up[(q._agent_id,q._queue_id)]*var[2],2) #(5)
+		F += [z]
+		
+		k = pow(var[7],self._capacity)
+		F += [var[2] - (k-pow(var[7],self._capacity+1))]#/(1-k*var[7])] #6
+
+		F += [var[7] - var[0]*var[9]] #7
+
+		F += [var[8] - 1 + var[2]]
+		F += [var[1] - var[0]*var[8]] #8
+		F += [var[9]*var[3]  - 1] #9
+		F += [var[11]*var[4]  - 1] #10
+		F += [var[10]*var[5]  - var[6]] #11
+		F += [var[1] - var[13]*var[5]] #12
+		F += [var[1] - var[12] * var[3]] #13
+		return F
+
 
 # def main():
 # 	'''create agents'''
