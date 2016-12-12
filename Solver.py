@@ -128,34 +128,34 @@ def create_lower_upper_bound_constraints(Vars , lb , ub , Down_queue , Up_queue)
 		eqns.append( Vars[i][0] >= lb[i][0] )
 		eqns.append( Vars[i][0] <= ub[i][0] )
 
-	for i in range(len(Down_queue)):
-		agent_id = Down_queue[i]._agent_id
-		queue_id = Down_queue[i]._queue_id
-		eqns.append( Vars[14][(agent_id, queue_id)] >= lb[14][(agent_id, queue_id)])	#14 - Az_i^j 
-		eqns.append( Vars[14][(agent_id, queue_id)] <= ub[14][(agent_id, queue_id)])	#14 - Az_i^j 
+	# for i in range(len(Down_queue)):
+	# 	agent_id = Down_queue[i]._agent_id
+	# 	queue_id = Down_queue[i]._queue_id
+	# 	eqns.append( Vars[14][(agent_id, queue_id)] >= lb[14][(agent_id, queue_id)])	#14 - Az_i^j 
+	# 	eqns.append( Vars[14][(agent_id, queue_id)] <= ub[14][(agent_id, queue_id)])	#14 - Az_i^j 
 		
 
-	eqns.append( Vars[15][0] >= lb[15][0] )
-	eqns.append( Vars[15][0] <= ub[15][0] )	
+	# eqns.append( Vars[15][0] >= lb[15][0] )
+	# eqns.append( Vars[15][0] <= ub[15][0] )	
 
-	eqns.append( Vars[16][0] >= lb[16][0] )
-	eqns.append( Vars[16][0] <= ub[16][0] )	
+	# eqns.append( Vars[16][0] >= lb[16][0] )
+	# eqns.append( Vars[16][0] <= ub[16][0] )	
 
-	for i in range(len(Up_queue)):
-		agent_id = Up_queue[i]._agent_id
-		queue_id = Up_queue[i]._queue_id
-		eqns.append(Vars[17][(agent_id, queue_id)] >= lb[17][(agent_id, queue_id)])			#17 - Dz_i^j
-		eqns.append(Vars[17][(agent_id, queue_id)] <= ub[17][(agent_id, queue_id)])
+	# for i in range(len(Up_queue)):
+	# 	agent_id = Up_queue[i]._agent_id
+	# 	queue_id = Up_queue[i]._queue_id
+	# 	eqns.append(Vars[17][(agent_id, queue_id)] >= lb[17][(agent_id, queue_id)])			#17 - Dz_i^j
+	# 	eqns.append(Vars[17][(agent_id, queue_id)] <= ub[17][(agent_id, queue_id)])
 		
 
-	eqns.append( Vars[18][0] >= lb[18][0] )
-	eqns.append( Vars[18][0] <= ub[18][0] )	
+	# eqns.append( Vars[18][0] >= lb[18][0] )
+	# eqns.append( Vars[18][0] <= ub[18][0] )	
 
-	for i in range(len(Up_queue)):
-		agent_id = Up_queue[i]._agent_id
-		queue_id = Up_queue[i]._queue_id
-		eqns.append(Vars[19][(agent_id, queue_id)] >= lb[19][(agent_id, queue_id)])			#19 - Fz_i^j 
-		eqns.append(Vars[19][(agent_id, queue_id)] <= ub[19][(agent_id, queue_id)])	
+	# for i in range(len(Up_queue)):
+	# 	agent_id = Up_queue[i]._agent_id
+	# 	queue_id = Up_queue[i]._queue_id
+	# 	eqns.append(Vars[19][(agent_id, queue_id)] >= lb[19][(agent_id, queue_id)])			#19 - Fz_i^j 
+	# 	eqns.append(Vars[19][(agent_id, queue_id)] <= ub[19][(agent_id, queue_id)])	
 		
 
 	#d_i\mu_i^eff bounds
@@ -681,7 +681,7 @@ def get_coupling_constraints(Vars, Up_queue , Down_queue , agent_list , My_agent
 		eqn = eqn + q._vars[14][(My_agent_id , My_queue_id)]
 
 	constraints.append(eqn == 0)	
-
+	
 	#4
 	eqn = -Vars[16][0]
 	for i in range(len(Down_queue)):
@@ -691,7 +691,7 @@ def get_coupling_constraints(Vars, Up_queue , Down_queue , agent_list , My_agent
 		eqn = eqn + q._vars[17][(My_agent_id , My_queue_id)]
 
 	constraints.append(eqn == 0)
-
+	
 	#5
 	eqn = -Vars[18][0]
 	for i in range(len(Down_queue)):
@@ -700,7 +700,85 @@ def get_coupling_constraints(Vars, Up_queue , Down_queue , agent_list , My_agent
 		q = agent_list[agent_id].get_local_queue(queue_id)
 		eqn = eqn + q._vars[19][(My_agent_id , My_queue_id)]
 
-	constraints.append(eqn == 0)
-
+	constraints.append(eqn == 0)	
 	return constraints
 		
+def get_solution_vals(Vars , Down_queue , Up_queue):
+	sol = []
+	
+	sol.append([])
+	sol[0].append(Vars[0][0].value) # 0 - \lambda_i
+	
+	sol.append([])
+	sol[1].append(Vars[1][0].value) # 1 - \lambda_i^{eff}
+	
+	sol.append([])
+	sol[2].append(Vars[2][0].value) # 2 - P(N_i = k_i)
+	
+	sol.append([])
+	sol[3].append(Vars[3][0].value) # 3 - \mu_i^{eff}
+	
+	sol.append([])
+	sol[4].append(Vars[4][0].value) # 4 - \mu_i
+
+	sol.append([])
+	sol[5].append(Vars[5][0].value) # 5 - \tilde{\mu_i}
+
+	sol.append([])
+	sol[6].append(Vars[6][0].value) # 6 - \mathcal{P}_i
+
+	sol.append([])
+	sol[7].append(Vars[7][0].value) # 7 - \rho_i
+
+	sol.append([])
+	sol[8].append(Vars[8][0].value) # 8 - v_i
+
+	sol.append([])
+	sol[9].append(Vars[9][0].value) # 9 - d_i
+
+	sol.append([])
+	sol[10].append(Vars[10][0].value) # 10 - t_i
+
+	sol.append([])
+	sol[11].append(Vars[11][0].value) # 11 - w_i
+
+	sol.append([])
+	sol[12].append(Vars[12][0].value) # 12 - f_i
+
+	sol.append([])
+	sol[13].append(Vars[13][0].value) # 13 - r_i
+
+	sol.append(dict())
+	for i in range(len(Down_queue)):
+		agent_id = Down_queue[i]._agent_id
+		queue_id = Down_queue[i]._queue_id
+		sol[14][(agent_id, queue_id)] = Vars[14][(agent_id, queue_id)].value	#14 - Az_i^j 
+
+	sol.append([])	
+	sol[15] = Vars[15][0].value								#15 - Bz_i
+
+	sol.append([])	
+	sol[16]= Vars[16][0].value								#16 - Cz_i
+
+	sol.append(dict())
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		sol[17][(agent_id, queue_id)] = Vars[17][(agent_id, queue_id)].value			#17 - Dz_i^j
+
+	sol.append([])			
+	sol[18]= Vars[18][0].value								#18 - EZ_i
+	
+	sol.append(dict())
+	for i in range(len(Up_queue)):
+		agent_id = Up_queue[i]._agent_id
+		queue_id = Up_queue[i]._queue_id
+		sol[19][(agent_id, queue_id)] = Vars[19][(agent_id, queue_id)].value			#19 - Fz_i^j 
+	 
+	sol.append([])
+	sol[20].append(Vars[20][0].value)					#20 - d_i\mu_i^eff
+
+	sol.append([])
+	sol[21].append(Vars[21][0].value)					#21 - w_i\mu_i
+
+	return sol

@@ -3,7 +3,7 @@ from mpi4py import MPI
 from cvxpy import *
 import Solver 
 import Constants
-from scipy.optimize import fsolve
+from copy import deepcopy
 
 class TrafficNetwork(object):
 	def __init__(self, agent_list, adjacent_matrix):
@@ -32,7 +32,6 @@ class TrafficNetwork(object):
 
 	def __repr__(self):
 		return str([v._agent_id for v in self._vertex])
-
 
 class TrafficAgentModel(object):
 	def __init__(self, agent_id, local_queue_num):
@@ -85,6 +84,28 @@ class TrafficAgentModel(object):
 	def __repr__(self):
 		return str([self._agent_id, [v.get_agent_id() for v in self._neighbor_agents]])
 
+	def set_lower_upper_bound(self , node):
+		for i in range(self._local_queue_num):
+			self.get_local_queue(i).set_new_lb_ub(node.lb[self._agent_id][i] , node.ub[self._agent_id][i])
+
+	def get_lb_bounds(self):
+		lb = dict()
+		for i in range(self._local_queue_num):
+			lb[i] = deepcopy(self.get_local_queue(i).lb)
+		return lb		
+
+	def get_ub_bounds(self):
+		ub = dict()
+		for i in range(self._local_queue_num):
+			ub[i] = deepcopy(self.get_local_queue(i).ub)
+		return ub
+
+	def get_sol(self):
+		sol = dict()
+		for i in range(self._local_queue_num):
+			sol[i] = self.get_local_queue(i).get_sol()
+		return sol					
+
 	def get_queue_sum_sat_constraint(self):
 		eqn = Variable()
 		
@@ -129,11 +150,6 @@ class TrafficAgentModel(object):
 		dual = comm.recv(source = Constants.BB_TREE_ID , tag = Constants.NEW_DUAL_VARS)
 		self.set_new_data(lb, ub, dual)
 
-	def set_new_data(self, lb , ub , dual):	
-		self.lb = lb
-		self.ub = ub
-		self.dual = dual
-
 	def construct_prob(self):
 		comm = MPI.COMM_WORLD
 		comm.send(lb , dest = Constants.BB_TREE_ID, tag = Constants.TREE_START_LB)	
@@ -171,10 +187,6 @@ class TrafficAgentModel(object):
 		for i in range(self._local_queue_num):
 			self.get_local_queue(i).Update_Dual_Vars()
 
-	def Check_Feasibility(self):
-		for i in range(self._local_queue_num):	
-			self.get_local_queue(i).feasibility()
-
 	def solve_problems(self):	 	
 	 	constraints =  self.get_all_constraints()	 	
 	 	
@@ -193,11 +205,7 @@ class TrafficAgentModel(object):
 			#print self.compute_residuals() , iter
 			self.Update_Dual_Vars()	 	
 			
-			#print 'feasibility agent_id', self._agent_id
 			print self.get_primal_objective().value , iter
-			
-			#self.Check_Feasibility()
-
 
 			iter = iter + 1
 	
@@ -296,11 +304,11 @@ class TrafficQueue(object):
 
 
 
-		self.ub.append([2/self._epsilon])#d
-		self.ub.append([2/self._epsilon])#t
-		self.ub.append([2/self._epsilon])#w
-		self.ub.append([2*self._speed_limit/self._epsilon])#f
-		self.ub.append([2*self._speed_limit/self._epsilon])#r
+		self.ub.append([1.1/self._epsilon])#d
+		self.ub.append([1.1/self._epsilon])#t
+		self.ub.append([1.1/self._epsilon])#w
+		self.ub.append([1.1*self._speed_limit/self._epsilon])#f
+		self.ub.append([1.1*self._speed_limit/self._epsilon])#r
 
 
 		ub_consus_down1= {}
@@ -308,7 +316,7 @@ class TrafficQueue(object):
 			ub_consus_down1[(v.get_agent_id(), v.get_queue_id())] = self._speed_limit*self._turn_prop[(v.get_agent_id(), v.get_queue_id())]
 		self.ub.append(ub_consus_down1) #A
 		self.ub.append([self._speed_limit]) #B
-		self.ub.append([2*len(self._downstream_queue)*self._speed_limit/self._epsilon]) #C
+		self.ub.append([1.1*len(self._downstream_queue)*self._speed_limit/self._epsilon]) #C
 		ub_consus_down2= {}
 		for v in self._upstream_queue:
 			ub_consus_down2[(v.get_agent_id(), v.get_queue_id())] = self._speed_limit/self._epsilon
@@ -320,6 +328,10 @@ class TrafficQueue(object):
 		self.ub.append(ub_consus_down3) #F
 		self.ub.append([1]) #d_i\mu_i^eff
 		self.ub.append([1]) #w_i\mu_i
+
+	def set_new_lb_ub(self , lb, ub):
+		self.lb = deepcopy(lb)
+		self.ub = deepcopy(ub)
 
 	def Initialize_variables(self):
 		self._vars , self._dual_vars = Solver.Variable_Initialization(self._upstream_queue , self._downstream_queue)
@@ -399,6 +411,9 @@ class TrafficQueue(object):
 	def get_coupling_constraints(self , agent_list):
 		return Solver.get_coupling_constraints(self._vars, self._upstream_queue , self._downstream_queue , agent_list , self._agent_id , self._queue_id)
 
+	def get_sol(self):
+		return Solver.get_solution_vals(self._vars , self._downstream_queue, self._upstream_queue)
+
 	def feasibility(self):
 
 		zG = []
@@ -457,7 +472,6 @@ class TrafficQueue(object):
 		F += [var[1] - var[12] * var[3]] #13
 		return F
 
-	
 
 # def main():
 # 	'''create agents'''
