@@ -4,6 +4,7 @@ from cvxpy import *
 import Solver 
 import Constants
 from copy import deepcopy
+from scipy.optimize import *
 
 class TrafficNetwork(object):
 	def __init__(self, agent_list, adjacent_matrix):
@@ -419,17 +420,23 @@ class TrafficQueue(object):
 		zG = []
 		for i in range(14):
 			zG.append(self._vars[i][0].value)
+		for i in range(14):
+			zG.append(pow(self._vars[i][0].value,2))
 
 
-		solution,infodict,ier, msg = fsolve(self.system_equations, zG, full_output=True,maxfev=100,xtol=0.1)
+		solution,infodict,ier, msg = fsolve(self.system_equations, zG, full_output=True,maxfev=5000,xtol=0.01)
 		
 		print 'feasibility'
-		print solution
+		#print solution
 		#print infodict
 		print ier
 		print msg
 		
 		return ier
+
+		# sol = root(self.system_equations, zG,method='broyden2')
+		# print sol
+
 
 	
 	def system_equations(self, var):
@@ -459,7 +466,7 @@ class TrafficQueue(object):
 		F += [z]
 		
 		k = pow(var[7],self._capacity)
-		F += [var[2] - (k-pow(var[7],self._capacity+1))]#/(1-k*var[7])] #6
+		F += [(var[2] - (k-pow(var[7],self._capacity+1))/(1-k*var[7]))] #6
 
 		F += [var[7] - var[0]*var[9]] #7
 
@@ -470,6 +477,8 @@ class TrafficQueue(object):
 		F += [var[10]*var[5]  - var[6]] #11
 		F += [var[1] - var[13]*var[5]] #12
 		F += [var[1] - var[12] * var[3]] #13
+		for i in range(14):
+			F += [var[i] - pow(var[i+14],2)]
 		return F
 
 

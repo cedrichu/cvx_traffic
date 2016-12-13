@@ -288,6 +288,10 @@ if __name__ == '__main__':
 	t2.set_ext_arr_rate([ext_arr_rate,ext_arr_rate,0,0])
 	t3.set_ext_arr_rate([0,ext_arr_rate,ext_arr_rate,0])
 	t4.set_ext_arr_rate([0,0,ext_arr_rate,ext_arr_rate])
+	# t1.set_ext_arr_rate([ext_arr_rate,0,0,0])
+	# t2.set_ext_arr_rate([ext_arr_rate,ext_arr_rate,0,0])
+	# t3.set_ext_arr_rate([0,ext_arr_rate,0,0])
+	# t4.set_ext_arr_rate([0,0,0,ext_arr_rate])
 	'''specify connection'''
 	n = len(agent_list)
 	adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
@@ -354,6 +358,18 @@ if __name__ == '__main__':
 		#Hsu-Chieh
 		#call function, get the objective, if (objective < best_solution) best_solution = objective
 		#hsu_chieh = ()
+		print '============================================================'
+		for a in agent_list:
+			print 'agent id', a._agent_id
+			for q in a._local_queue:
+				print 'queue id',q._queue_id
+
+				# for v in q._vars:
+				# 	if isinstance(v, list):
+				# 		print v[0].value
+				# 	else:
+				# 		print 'dict', v
+				q.feasibility()
 
 		# if(best_sol > hsu_chieh):
 		# 	hsu_chieh = best_sol
