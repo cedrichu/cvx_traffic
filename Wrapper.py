@@ -188,17 +188,15 @@ if __name__ == '__main__':
 		tree.begin_optimization()
 	else:
 		queue_num = 4
-		t1 = Network.TrafficAgentModel(0,queue_num)
-		t2 = Network.TrafficAgentModel(1,queue_num)
-		t3 = Network.TrafficAgentModel(2,queue_num)
-		t4 = Network.TrafficAgentModel(3,queue_num)
-		agent_list = [t1,t2,t3,t4]
+		agent_list = []
+		for i in range(iNumAgents):
+			agent_list.append(Network.TrafficAgentModel(i,queue_num))
 		'''specify external arrival rates'''
 		ext_arr_rate = 5.0
-		t1.set_ext_arr_rate([ext_arr_rate,0,0,ext_arr_rate])
-		t2.set_ext_arr_rate([ext_arr_rate,ext_arr_rate,0,0])
-		t3.set_ext_arr_rate([0,ext_arr_rate,ext_arr_rate,0])
-		t4.set_ext_arr_rate([0,0,ext_arr_rate,ext_arr_rate])
+		agent_list[0].set_ext_arr_rate([ext_arr_rate,0,0,ext_arr_rate])
+		agent_list[1].set_ext_arr_rate([ext_arr_rate,ext_arr_rate,0,0])
+		agent_list[2].set_ext_arr_rate([0,ext_arr_rate,ext_arr_rate,0])
+		agent_list[3].set_ext_arr_rate([0,0,ext_arr_rate,ext_arr_rate])
 		'''specify connection'''
 		n = len(agent_list)
 		adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
@@ -213,16 +211,7 @@ if __name__ == '__main__':
 		'''construct network'''
 		network = Network.TrafficNetwork(agent_list, adjacent_matrix)
 
-		t = 0
-
-		if(0 ==  rank):
-			t = t1
-		elif(1 == rank):
-			t = t2
-		elif(2 == rank):
-			t = t3
-		else:		
-			t = t4
+		t = agent_list[rank]
 
 		t.init_queue_solver_vars()	
 		t.solve_problems()
