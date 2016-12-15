@@ -273,25 +273,20 @@ if __name__ == '__main__':
 	
 	#comm = MPI.COMM_WORLD
 	#rank = comm.Get_rank()
-	iNumAgents = 4;
-
+	iNumAgents = 6;
 	queue_num = 4
-
-	t1 = Network.TrafficAgentModel(0,queue_num)
-	t2 = Network.TrafficAgentModel(1,queue_num)
-	t3 = Network.TrafficAgentModel(2,queue_num)
-	t4 = Network.TrafficAgentModel(3,queue_num)
-	agent_list = [t1,t2,t3,t4]
+	agent_list = []
+	for i in range(iNumAgents):
+		agent_list.append(Network.TrafficAgentModel(i,queue_num))
 	'''specify external arrival rates'''
 	ext_arr_rate = 5.0
-	t1.set_ext_arr_rate([ext_arr_rate,0,0,ext_arr_rate])
-	t2.set_ext_arr_rate([ext_arr_rate,ext_arr_rate,0,0])
-	t3.set_ext_arr_rate([0,ext_arr_rate,ext_arr_rate,0])
-	t4.set_ext_arr_rate([0,0,ext_arr_rate,ext_arr_rate])
-	# t1.set_ext_arr_rate([ext_arr_rate,0,0,0])
-	# t2.set_ext_arr_rate([ext_arr_rate,ext_arr_rate,0,0])
-	# t3.set_ext_arr_rate([0,ext_arr_rate,0,0])
-	# t4.set_ext_arr_rate([0,0,0,ext_arr_rate])
+	agent_list[0].set_ext_arr_rate([ext_arr_rate,0,0,ext_arr_rate])
+	agent_list[1].set_ext_arr_rate([ext_arr_rate,ext_arr_rate,0,0])
+	agent_list[2].set_ext_arr_rate([0,ext_arr_rate,0,0])
+	agent_list[3].set_ext_arr_rate([0,0,0,ext_arr_rate])
+
+	agent_list[4].set_ext_arr_rate([0,0,ext_arr_rate,ext_arr_rate])
+	agent_list[5].set_ext_arr_rate([0,ext_arr_rate,ext_arr_rate,0])
 	'''specify connection'''
 	n = len(agent_list)
 	adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
@@ -303,14 +298,20 @@ if __name__ == '__main__':
 	adjacent_matrix[1][0] = [[0,1,2],1]
 	adjacent_matrix[2][1] = [[1,2,3],2]
 	adjacent_matrix[2][3] = [[0,1,2],1]
+
+	adjacent_matrix[4][5] = [[0,3,2],3]
+	adjacent_matrix[4][3] = [[1,2,3],2]
+	adjacent_matrix[3][4] = [[1,0,3],0]
+	adjacent_matrix[5][2] = [[1,2,3],2]
+	adjacent_matrix[5][4] = [[0,1,2],1]
+	adjacent_matrix[2][5] = [[1,0,3],0]
 	'''construct network'''
 	network = Network.TrafficNetwork(agent_list, adjacent_matrix)
 
-	for i in range(0,4):
-		t = agent_list[i]
-		t.init_queue_solver_vars()
+	for i in range(0,iNumAgents):
+		agent_list[i].init_queue_solver_vars()
 	
-	tree = BB_Tree_Agent(4)
+	tree = BB_Tree_Agent(iNumAgents)
 	tree.get_node_info(agent_list)
 
 	best_sol = float('inf')
@@ -329,10 +330,10 @@ if __name__ == '__main__':
 			continue
 
 
-		for i in range(0 , 4):		
+		for i in range(0 , iNumAgents):		
 			agent_list[i].set_lower_upper_bound(node)
 
-		for i in range(0 , 4):
+		for i in range(0 , iNumAgents):
 			t = agent_list[i]
 			constraints += t.get_all_constraints()
 			constraints += t.get_consensus_constraints()
