@@ -140,25 +140,25 @@ class BB_Tree_Agent(object):
 		inf_list = []
 		x = []
 
-		# datafile = open('data.txt','r')
-		# for line in datafile:
-		# 	data = line.split()
-		# 	inf_list.append(float(data[1]))
-		# 	x.append(int(data[2]))
+		datafile = open('data_6agents.txt','r')
+		for line in datafile:
+			data = line.split()
+			inf_list.append(float(data[1]))
+			x.append(int(data[2]))
 
-		while(iter < Constants.MAX_ITER):
-			obj = 0
-			infeas = 0
-			for i in range(0 , self.iNumAgents):
-				data = comm.recv(source = i, tag = Constants.OPT_VAL)
-				obj = obj + data[0]
-				infeas = infeas + data[1] 
+		# while(iter < Constants.MAX_ITER):
+		# 	obj = 0
+		# 	infeas = 0
+		# 	for i in range(0 , self.iNumAgents):
+		# 		data = comm.recv(source = i, tag = Constants.OPT_VAL)
+		# 		obj = obj + data[0]
+		# 		infeas = infeas + data[1] 
 
-			print obj , math.sqrt(infeas) , iter	
-			obj_list.append(obj)
-			inf_list.append(math.sqrt(infeas))	
-			x.append(iter)
-			iter = iter + 1
+		# 	print obj , math.sqrt(infeas) , iter	
+		# 	obj_list.append(obj)
+		# 	inf_list.append(math.sqrt(infeas))	
+		# 	x.append(iter)
+		# 	iter = iter + 1
 
 		# plt.plot(np.array(x), np.array(obj_list))
 		# #plt.legend( loc='upper right', numpoints = 1 )
@@ -167,12 +167,12 @@ class BB_Tree_Agent(object):
 		# plt.xlabel('iterations')
 		# plt.show()
 
-		# plt.plot(np.array(x), np.array(inf_list))
-		# #plt.legend( loc='upper right', numpoints = 1 )
-		# plt.grid()
-		# plt.ylabel('residual')
-		# plt.xlabel('iterations')
-		# plt.show()
+		plt.plot(np.array(x), np.array(inf_list))
+		#plt.legend( loc='upper right', numpoints = 1 )
+		plt.grid()
+		plt.ylabel('residual')
+		plt.xlabel('iterations')
+		plt.show()
 
 		
 
@@ -180,7 +180,7 @@ if __name__ == '__main__':
 	
 	comm = MPI.COMM_WORLD
 	rank = comm.Get_rank()
-	iNumAgents = 4;
+	iNumAgents = 6;
 
 	if ( Constants.BB_TREE_ID == rank ):
 		tree = BB_Tree_Agent(iNumAgents)
@@ -197,6 +197,9 @@ if __name__ == '__main__':
 		agent_list[1].set_ext_arr_rate([ext_arr_rate,ext_arr_rate,0,0])
 		agent_list[2].set_ext_arr_rate([0,ext_arr_rate,ext_arr_rate,0])
 		agent_list[3].set_ext_arr_rate([0,0,ext_arr_rate,ext_arr_rate])
+
+		agent_list[4].set_ext_arr_rate([0,ext_arr_rate,ext_arr_rate,0])
+		agent_list[5].set_ext_arr_rate([0,0,ext_arr_rate,ext_arr_rate])
 		'''specify connection'''
 		n = len(agent_list)
 		adjacent_matrix = [[[]for x in range(n)] for y in range(n)] 
@@ -208,8 +211,16 @@ if __name__ == '__main__':
 		adjacent_matrix[1][0] = [[0,1,2],1]
 		adjacent_matrix[2][1] = [[1,2,3],2]
 		adjacent_matrix[2][3] = [[0,1,2],1]
+
+		adjacent_matrix[4][5] = [[0,3,2],3]
+		adjacent_matrix[4][3] = [[1,2,3],2]
+		adjacent_matrix[3][4] = [[1,0,3],0]
+		adjacent_matrix[5][2] = [[1,2,3],2]
+		adjacent_matrix[5][4] = [[0,1,2],1]
+		adjacent_matrix[2][5] = [[1,0,3],0]
 		'''construct network'''
 		network = Network.TrafficNetwork(agent_list, adjacent_matrix)
+
 
 		t = agent_list[rank]
 
